@@ -2,6 +2,8 @@ import org.w3c.dom.Node;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 public class QurridorUI extends JFrame {
     private JPanel gamePanel;
@@ -12,7 +14,9 @@ public class QurridorUI extends JFrame {
     private int howManyRows;
     private int howManyCols;
     private int [][] placeMatrix;
-
+    //하드코딩 후 나중에 수정할것
+    private String userId = "testUser";
+    ServerConnect serverConnect;
     public QurridorUI() {
         setTitle("Quoridor Game");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
@@ -76,7 +80,6 @@ public class QurridorUI extends JFrame {
         userInfoPanel.setLocation(0, 0);
         JLabel userInfoLabel = new JLabel("접속자 정보", SwingConstants.CENTER);
         userInfoPanel.add(userInfoLabel);
-
         // 채팅창 패널
         chatPanel = new JPanel();
         chatPanel.setBackground(Color.PINK);
@@ -84,15 +87,33 @@ public class QurridorUI extends JFrame {
         chatPanel.setLocation(0, 450);
         chatPanel.setLayout(new BorderLayout());
 
+        // 채팅창 제목
         JLabel chatLabel = new JLabel("채팅창", SwingConstants.CENTER);
+        chatLabel.setFont(new Font("Serif", Font.BOLD, 18)); // 글씨 크기 조정
         chatPanel.add(chatLabel, BorderLayout.NORTH);
 
+        // 채팅창 메시지 표시 영역
         JTextArea chatArea = new JTextArea();
         chatArea.setEditable(false);
+        chatArea.setFont(new Font("SansSerif", Font.PLAIN, 16)); // 글씨 크기 조정
         chatPanel.add(new JScrollPane(chatArea), BorderLayout.CENTER);
 
+        // 입력창과 버튼 영역
+        JPanel inputPanel = new JPanel();
+        inputPanel.setLayout(new BorderLayout());
+
+        // 입력창
         JTextField chatInput = new JTextField();
-        chatPanel.add(chatInput, BorderLayout.SOUTH);
+        chatInput.setFont(new Font("SansSerif", Font.PLAIN, 16)); // 글씨 크기 조정
+        inputPanel.add(chatInput, BorderLayout.CENTER);
+
+        // 보내기 버튼
+        JButton sendButton = new JButton("보내기");
+        sendButton.setFont(new Font("SansSerif", Font.PLAIN, 16)); // 글씨 크기 조정
+        inputPanel.add(sendButton, BorderLayout.EAST);
+
+        // 입력창과 버튼을 채팅창 아래쪽에 추가
+        chatPanel.add(inputPanel, BorderLayout.SOUTH);
 
         // 오른쪽 맨 아래 버튼
         JPanel buttonPanel = new JPanel();
@@ -115,8 +136,26 @@ public class QurridorUI extends JFrame {
         this.revalidate();
         this.repaint();
 
+        ServerConnect serverConnect = new ServerConnect(userId);
+        QurridorGameController qurridorGameController = new QurridorGameController(gamePanel,gameArea,placeMatrix,serverConnect);
 
-        QurridorGameController qurridorGameController = new QurridorGameController(gamePanel,gameArea,placeMatrix);
+
+        // 버튼 리스너 추가
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String chat = chatInput.getText();
+                if(chat.isEmpty()) return;
+                chatInput.setText("");
+                serverConnect.sendChatting(chat);
+            }
+        });
+        chatInput.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendButton.doClick();
+            }
+        });
     }
 
     private void xmlParsing() {

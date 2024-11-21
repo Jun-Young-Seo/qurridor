@@ -2,19 +2,19 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
 public class QurridorGameController extends KeyAdapter {
     private JPanel gamePanel; // 게임 보드 패널
     private JPanel gameArea;
     private int[][] placeMatrix; // 말의 위치를 관리하는 배열
     private JLabel player; // 말 UI
-
-    public QurridorGameController(JPanel gamePanel, JPanel gameArea, int[][] placeMatrix) {
+    private ServerConnect serverConnect;
+    public QurridorGameController(JPanel gamePanel, JPanel gameArea, int[][] placeMatrix,
+                                  ServerConnect serverConnect) {
         this.gamePanel = gamePanel;
         this.placeMatrix = placeMatrix;
         this.gameArea = gameArea;
-
+        this.serverConnect=serverConnect;
         playerInit();
 
         // 키보드 입력 이벤트 추가
@@ -143,15 +143,19 @@ public class QurridorGameController extends KeyAdapter {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
                 movePiece(currentRow - 1, currentCol); // 위로 이동
+                serverConnect.sendMove(currentRow,currentRow-1, currentCol,currentCol);
                 break;
             case KeyEvent.VK_DOWN:
                 movePiece(currentRow + 1, currentCol); // 아래로 이동
+                serverConnect.sendMove(currentRow,currentRow+1, currentCol,currentCol);
                 break;
             case KeyEvent.VK_LEFT:
                 movePiece(currentRow, currentCol - 1); // 왼쪽으로 이동
+                serverConnect.sendMove(currentRow,currentRow,currentCol,currentCol-1);
                 break;
             case KeyEvent.VK_RIGHT:
                 movePiece(currentRow, currentCol + 1); // 오른쪽으로 이동
+                serverConnect.sendMove(currentRow,currentRow,currentCol,currentCol+1);
                 break;
         }
     }
