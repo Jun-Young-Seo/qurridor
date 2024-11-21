@@ -9,20 +9,24 @@ public class ServerConnect {
     private OutputStream outputStream;
     private ObjectInputStream in;
     private ObjectOutputStream out;
+    private QurridorUI qurridorUI;
     ///나중에 수정
     private String userId;
-    public ServerConnect(String userId){
+    private ReceiveThread receiveThread;
+    public ServerConnect(String userId, QurridorUI qurridorUI){
         this.userId=userId;
+        this.qurridorUI=qurridorUI;
         try {
             socket= new Socket(serverAddress,serverPort);
             outputStream = socket.getOutputStream();
             out = new ObjectOutputStream(new BufferedOutputStream(outputStream));
             out.flush();
-            System.out.println(out);
             inputStream = socket.getInputStream();
             in = new ObjectInputStream(inputStream);
-            System.out.println(in);
             sendUserId();
+
+            receiveThread = new ReceiveThread(in,qurridorUI);
+            receiveThread.start();
         } catch (IOException e) {
             System.out.println("Server connect error");
             e.printStackTrace();

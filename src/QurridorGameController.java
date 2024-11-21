@@ -142,19 +142,19 @@ public class QurridorGameController extends KeyAdapter {
         // 방향키 입력 처리
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
-                movePiece(currentRow - 1, currentCol); // 위로 이동
+//                movePiece(currentRow - 1, currentCol); // 위로 이동
                 serverConnect.sendMove(currentRow,currentRow-1, currentCol,currentCol);
                 break;
             case KeyEvent.VK_DOWN:
-                movePiece(currentRow + 1, currentCol); // 아래로 이동
+//                movePiece(currentRow + 1, currentCol); // 아래로 이동
                 serverConnect.sendMove(currentRow,currentRow+1, currentCol,currentCol);
                 break;
             case KeyEvent.VK_LEFT:
-                movePiece(currentRow, currentCol - 1); // 왼쪽으로 이동
+//                movePiece(currentRow, currentCol - 1); // 왼쪽으로 이동
                 serverConnect.sendMove(currentRow,currentRow,currentCol,currentCol-1);
                 break;
             case KeyEvent.VK_RIGHT:
-                movePiece(currentRow, currentCol + 1); // 오른쪽으로 이동
+//                movePiece(currentRow, currentCol + 1); // 오른쪽으로 이동
                 serverConnect.sendMove(currentRow,currentRow,currentCol,currentCol+1);
                 break;
         }

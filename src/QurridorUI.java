@@ -9,6 +9,7 @@ public class QurridorUI extends JFrame {
     private JPanel gamePanel;
     private JPanel userInfoPanel;
     private JPanel chatPanel;
+    private JTextArea chatArea;
     private Container contentPane;
     private JPanel gameArea;
     private int howManyRows;
@@ -93,7 +94,7 @@ public class QurridorUI extends JFrame {
         chatPanel.add(chatLabel, BorderLayout.NORTH);
 
         // 채팅창 메시지 표시 영역
-        JTextArea chatArea = new JTextArea();
+        chatArea = new JTextArea();
         chatArea.setEditable(false);
         chatArea.setFont(new Font("SansSerif", Font.PLAIN, 16)); // 글씨 크기 조정
         chatPanel.add(new JScrollPane(chatArea), BorderLayout.CENTER);
@@ -136,7 +137,7 @@ public class QurridorUI extends JFrame {
         this.revalidate();
         this.repaint();
 
-        ServerConnect serverConnect = new ServerConnect(userId);
+        ServerConnect serverConnect = new ServerConnect(userId, this);
         QurridorGameController qurridorGameController = new QurridorGameController(gamePanel,gameArea,placeMatrix,serverConnect);
 
 
@@ -216,5 +217,20 @@ public class QurridorUI extends JFrame {
                 }
             }
         }
+    }
+
+    public JPanel getChatPanel() {
+        return chatPanel;
+    }
+
+    public JPanel getGamePanel() {
+        return gamePanel;
+    }
+
+    public JPanel getUserInfoPanel() {
+        return userInfoPanel;
+    }
+    public void addChat(String msg){
+        chatArea.append(msg+"\n");
     }
 }
