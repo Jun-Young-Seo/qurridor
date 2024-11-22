@@ -179,6 +179,11 @@ public class QurridorServer {
                             broadCast(chattingMsg);
                             break;
                         case PLAY_MODE:
+                            QurridorMsg gameMsg = new QurridorMsg();
+                            gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
+                            gameMsg.setUserId(userId);
+                            gameMsg.setMoveData(qurridorMsg.getMoveData());
+                            broadCast(gameMsg);
                             break;
                     }
                 }
