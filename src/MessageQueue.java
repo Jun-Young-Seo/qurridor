@@ -14,7 +14,7 @@ public class MessageQueue {
         messageQueue.offer(msg);
 //        System.out.println(messageQueue.size());
     }
-    //메세지 빼기 --> 맨 앞 삭제됨
+    //메세지 빼기 --> 맨 앞 삭제됨 poll 아니고 디큐
     public QurridorMsg dequeueMessage() {
 //        System.out.println("Dequeue!!");
         try {

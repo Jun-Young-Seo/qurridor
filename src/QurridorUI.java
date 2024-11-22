@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class QurridorUI extends JFrame {
     private JPanel gamePanel;
@@ -15,10 +17,12 @@ public class QurridorUI extends JFrame {
     private int howManyRows;
     private int howManyCols;
     private int [][] placeMatrix;
+    private int [][] opponentMatrix;
     private MessageQueue qurridorMessageQueue;
+    private OpponentController opponentController;
     private QurridorGameController qurridorGameController;
-    //하드코딩 후 나중에 수정할것
-    private String userId = "testUser";
+    private final String userId = String.valueOf(Math.random());
+    private boolean isFirst = false;
     ServerConnect serverConnect;
     public QurridorUI() {
         qurridorMessageQueue = new MessageQueue();
@@ -142,9 +146,11 @@ public class QurridorUI extends JFrame {
         this.repaint();
 
         ServerConnect serverConnect = new ServerConnect(userId, this, qurridorMessageQueue);
-        qurridorGameController = new QurridorGameController(gamePanel,gameArea,
-                                                                        placeMatrix,serverConnect,qurridorMessageQueue);
         ProcessMessage processMessage = new ProcessMessage();
+        qurridorGameController = new QurridorGameController(gamePanel,gameArea,
+                placeMatrix,serverConnect,qurridorMessageQueue, isFirst);
+
+        opponentController = new OpponentController(gameArea, opponentMatrix);
         processMessage.start();
 
         // 버튼 리스너 추가
@@ -163,6 +169,14 @@ public class QurridorUI extends JFrame {
                 sendButton.doClick();
             }
         });
+
+        gameArea.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                gameArea.requestFocus();
+            }
+        });
+
     }
 
     private void xmlParsing() {
@@ -175,6 +189,7 @@ public class QurridorUI extends JFrame {
 
     public void setGameArea(int rows, int cols) {
         placeMatrix = new int[rows][cols];
+        opponentMatrix = new int[rows][cols];
 
         gameArea = new JPanel();
         gameArea.setLayout(null);
@@ -229,9 +244,9 @@ public class QurridorUI extends JFrame {
         @Override
         public void run(){
             while (true) {
-//                System.out.println("message queue empty");
                 while (!qurridorMessageQueue.isEmpty()) {
                     QurridorMsg serverMsg = qurridorMessageQueue.dequeueMessage();
+                    String id = serverMsg.getUserId();
                     switch (serverMsg.getNowMode()) {
                         case LOGIN_MODE:
                             break;
@@ -239,12 +254,36 @@ public class QurridorUI extends JFrame {
                             break;
                         case CHATTING_MODE:
                             String msg = serverMsg.getMessage();
-                            chatArea.append(msg + "\n");
+                            if(id.equals(userId)) {
+                                chatArea.append(userId + " : "+msg + "\n");
+                            }
+                            else{
+                                chatArea.append(id+" : "+msg+"\n");
+                            }
+                            break;
+                        case FIRST_MODE:
+                            String whoFirst = serverMsg.getMessage();
+                            if(userId.equals(whoFirst)){
+                                isFirst = true;
+                                chatArea.append("선턴입니다.");
+                                qurridorGameController.setMyTurn(true);
+                            }
+                            else{
+                                chatArea.append("상대가 선턴입니다.");
+                                qurridorGameController.setMyTurn(false);
+                            }
                             break;
                         case PLAY_MODE:
-                            System.out.println(serverMsg.getMoveData());
-                            qurridorGameController.movePiece(serverMsg.getFromRow(), serverMsg.getToRow()
-                                                            ,serverMsg.getFromCol(), serverMsg.getToCol());
+                            if(id.equals(userId)) {
+                                qurridorGameController.movePiece(serverMsg.getFromRow(), serverMsg.getToRow()
+                                        , serverMsg.getFromCol(), serverMsg.getToCol());
+                                qurridorGameController.setMyTurn(false);
+                            }
+                            else{
+                                opponentController.moveOpponentPiece(serverMsg.getFromRow(), serverMsg.getToRow()
+                                        , serverMsg.getFromCol(), serverMsg.getToCol());
+                                qurridorGameController.setMyTurn(true);
+                            }
                             break;
                     }
                 }

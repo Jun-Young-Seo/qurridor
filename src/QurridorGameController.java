@@ -10,13 +10,19 @@ public class QurridorGameController extends KeyAdapter {
     private JLabel player; // 말 UI
     private ServerConnect serverConnect;
     private MessageQueue qurridorMessageQueue;
+    private int rows;
+    private int cols;
+    private boolean isMyTurn;
     public QurridorGameController(JPanel gamePanel, JPanel gameArea, int[][] placeMatrix,
-                                  ServerConnect serverConnect, MessageQueue qurridorMessageQueue) {
+                                  ServerConnect serverConnect, MessageQueue qurridorMessageQueue, boolean isFirst) {
         this.gamePanel = gamePanel;
         this.placeMatrix = placeMatrix;
         this.gameArea = gameArea;
         this.serverConnect=serverConnect;
         this.qurridorMessageQueue=qurridorMessageQueue;
+        this.isMyTurn = isFirst;
+        rows=placeMatrix.length;
+        cols=placeMatrix[0].length;
         playerInit();
 
         // 키보드 입력 이벤트 추가
@@ -26,10 +32,6 @@ public class QurridorGameController extends KeyAdapter {
 
     // 말 초기화
     public void playerInit() {
-        int rows = placeMatrix.length;
-        int cols = placeMatrix[0].length;
-        System.out.println("rows : " + rows + " cols : " + cols);
-
         // 말의 초기 위치 (아래 행, 가운데 열)
         int startRow = rows - 1;
         int startCol = cols / 2;
@@ -52,11 +54,8 @@ public class QurridorGameController extends KeyAdapter {
 
     // 말을 이동시키는 메서드
     public boolean movePiece(int fromRow, int toRow, int fromCol, int toCol) {
-        int rows = placeMatrix.length;
-        int cols = placeMatrix[0].length;
-
         // 이동 가능한지 검증
-        if (!isValidMove(toRow, toCol)) {
+        if (!isValidMove(fromRow,toRow,fromCol, toCol)) {
             System.out.println("cant move there");
             return false;
         }
@@ -75,35 +74,21 @@ public class QurridorGameController extends KeyAdapter {
     }
 
     // 이동 가능한지 검증하는 메서드
-    private boolean isValidMove(int newRow, int newCol) {
-        int rows = placeMatrix.length;
-        int cols = placeMatrix[0].length;
-
+    private boolean isValidMove(int fromRow, int toRow, int fromCol, int toCol) {
         // 범위 밖이면 이동 불가
-        if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
+        if (toRow < 0 || toRow >= rows || toCol < 0 || toCol >= cols) {
             System.out.println("화면 밖!");
             return false;
         }
 
-        // 이미 점유된 위치이면 이동 불가
-        if (placeMatrix[newRow][newCol] == 1) {
+        // 다른사람 있으면 이동 불가
+        if (placeMatrix[toRow][toCol] == 1) {
             System.out.println("상대 있음!");
             return false;
         }
 
-        // 현재 위치에서 한 칸 이내로만 이동 가능
-        int currentRow = -1;
-        int currentCol = -1;
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (placeMatrix[i][j] == 1) {
-                    currentRow = i;
-                    currentCol = j;
-                    break;
-                }
-            }
-        }
-        if (Math.abs(currentRow - newRow) > 1 || Math.abs(currentCol - newCol) > 1) {
+
+        if (Math.abs(fromRow - toRow) > 1 || Math.abs(fromCol - toCol) > 1) {
             return false;
         }
 
@@ -113,9 +98,12 @@ public class QurridorGameController extends KeyAdapter {
     // KeyListener 메서드 구현
     @Override
     public void keyPressed(KeyEvent e) {
-        int rows = placeMatrix.length;
-        int cols = placeMatrix[0].length;
-
+        System.out.println(e);
+        System.out.println("trun : "+isMyTurn);
+        if(!isMyTurn){
+            System.out.println("not my turn!!");
+            return;
+        }
         // 현재 위치 찾기
         int currentRow = -1;
         int currentCol = -1;
@@ -149,5 +137,7 @@ public class QurridorGameController extends KeyAdapter {
                 break;
         }
     }
-
+    public void setMyTurn(boolean isMyTurn){
+        this.isMyTurn=isMyTurn;
+    }
 }
