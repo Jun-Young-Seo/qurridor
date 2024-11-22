@@ -15,10 +15,14 @@ public class QurridorUI extends JFrame {
     private int howManyRows;
     private int howManyCols;
     private int [][] placeMatrix;
+    private MessageQueue qurridorMessageQueue;
+    private QurridorGameController qurridorGameController;
     //하드코딩 후 나중에 수정할것
     private String userId = "testUser";
     ServerConnect serverConnect;
     public QurridorUI() {
+        qurridorMessageQueue = new MessageQueue();
+
         setTitle("Quoridor Game");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1630, 940); // 전체 프레임 크기 설정
@@ -137,9 +141,11 @@ public class QurridorUI extends JFrame {
         this.revalidate();
         this.repaint();
 
-        ServerConnect serverConnect = new ServerConnect(userId, this);
-        QurridorGameController qurridorGameController = new QurridorGameController(gamePanel,gameArea,placeMatrix,serverConnect);
-
+        ServerConnect serverConnect = new ServerConnect(userId, this, qurridorMessageQueue);
+        qurridorGameController = new QurridorGameController(gamePanel,gameArea,
+                                                                        placeMatrix,serverConnect,qurridorMessageQueue);
+        ProcessMessage processMessage = new ProcessMessage();
+        processMessage.start();
 
         // 버튼 리스너 추가
         sendButton.addActionListener(new ActionListener() {
@@ -219,18 +225,30 @@ public class QurridorUI extends JFrame {
         }
     }
 
-    public JPanel getChatPanel() {
-        return chatPanel;
-    }
-
-    public JPanel getGamePanel() {
-        return gamePanel;
-    }
-
-    public JPanel getUserInfoPanel() {
-        return userInfoPanel;
-    }
-    public void addChat(String msg){
-        chatArea.append(msg+"\n");
+    private class ProcessMessage extends Thread{
+        @Override
+        public void run(){
+            while (true) {
+//                System.out.println("message queue empty");
+                while (!qurridorMessageQueue.isEmpty()) {
+                    QurridorMsg serverMsg = qurridorMessageQueue.dequeueMessage();
+                    switch (serverMsg.getNowMode()) {
+                        case LOGIN_MODE:
+                            break;
+                        case LOGOUT_MODE:
+                            break;
+                        case CHATTING_MODE:
+                            String msg = serverMsg.getMessage();
+                            chatArea.append(msg + "\n");
+                            break;
+                        case PLAY_MODE:
+                            System.out.println(serverMsg.getMoveData());
+                            qurridorGameController.movePiece(serverMsg.getFromRow(), serverMsg.getToRow()
+                                                            ,serverMsg.getFromCol(), serverMsg.getToCol());
+                            break;
+                    }
+                }
+            }
+        }
     }
 }

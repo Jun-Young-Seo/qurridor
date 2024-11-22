@@ -13,9 +13,12 @@ public class ServerConnect {
     ///나중에 수정
     private String userId;
     private ReceiveThread receiveThread;
-    public ServerConnect(String userId, QurridorUI qurridorUI){
+    private MessageQueue qurridorMessageQueue;
+    public ServerConnect(String userId, QurridorUI qurridorUI, MessageQueue qurriodrMessageQueue){
         this.userId=userId;
         this.qurridorUI=qurridorUI;
+        this.qurridorMessageQueue=qurriodrMessageQueue;
+        System.out.println("ServerConnect : "+qurriodrMessageQueue);
         try {
             socket= new Socket(serverAddress,serverPort);
             outputStream = socket.getOutputStream();
@@ -25,7 +28,7 @@ public class ServerConnect {
             in = new ObjectInputStream(inputStream);
             sendUserId();
 
-            receiveThread = new ReceiveThread(in,qurridorUI);
+            receiveThread = new ReceiveThread(in,qurridorUI,qurridorMessageQueue);
             receiveThread.start();
         } catch (IOException e) {
             System.out.println("Server connect error");
@@ -57,11 +60,11 @@ public class ServerConnect {
             e.printStackTrace();
         }
     }
-    public void sendMove(int fromRow, int toRow, int fromCol, int toCol){
+    public void sendMove(int fromRow, int fromCol, int toRow, int toCol){
         QurridorMsg gameMsg = new QurridorMsg();
         gameMsg.setUserId(userId);
         gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
-        gameMsg.setMoveData(fromRow,toRow,fromCol,toCol);
+        gameMsg.setMoveData(fromRow,fromCol,toRow,toCol);
         try {
             out.writeObject(gameMsg);
             out.flush();

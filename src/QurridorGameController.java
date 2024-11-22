@@ -9,12 +9,14 @@ public class QurridorGameController extends KeyAdapter {
     private int[][] placeMatrix; // 말의 위치를 관리하는 배열
     private JLabel player; // 말 UI
     private ServerConnect serverConnect;
+    private MessageQueue qurridorMessageQueue;
     public QurridorGameController(JPanel gamePanel, JPanel gameArea, int[][] placeMatrix,
-                                  ServerConnect serverConnect) {
+                                  ServerConnect serverConnect, MessageQueue qurridorMessageQueue) {
         this.gamePanel = gamePanel;
         this.placeMatrix = placeMatrix;
         this.gameArea = gameArea;
         this.serverConnect=serverConnect;
+        this.qurridorMessageQueue=qurridorMessageQueue;
         playerInit();
 
         // 키보드 입력 이벤트 추가
@@ -49,36 +51,24 @@ public class QurridorGameController extends KeyAdapter {
     }
 
     // 말을 이동시키는 메서드
-    public boolean movePiece(int newRow, int newCol) {
+    public boolean movePiece(int fromRow, int toRow, int fromCol, int toCol) {
         int rows = placeMatrix.length;
         int cols = placeMatrix[0].length;
 
         // 이동 가능한지 검증
-        if (!isValidMove(newRow, newCol)) {
+        if (!isValidMove(toRow, toCol)) {
+            System.out.println("cant move there");
             return false;
         }
 
-        // 현재 위치 찾기
-        int currentRow = -1;
-        int currentCol = -1;
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (placeMatrix[i][j] == 1) {
-                    currentRow = i;
-                    currentCol = j;
-                    break;
-                }
-            }
-        }
-
         // 이전 위치 초기화
-        placeMatrix[currentRow][currentCol] = 0;
+        placeMatrix[fromRow][fromCol] = 0;
 
         // 새로운 위치 설정
-        placeMatrix[newRow][newCol] = 1;
+        placeMatrix[toRow][toCol] = 1;
 
         // 말 UI 업데이트
-        player.setLocation(newCol * 70, newRow * 70); // 블록 + 장애물 크기 반영
+        player.setLocation(toCol * 70, toRow * 70); // 블록 + 장애물 크기 반영
         gamePanel.repaint();
 
         return true;
@@ -143,19 +133,19 @@ public class QurridorGameController extends KeyAdapter {
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
 //                movePiece(currentRow - 1, currentCol); // 위로 이동
-                serverConnect.sendMove(currentRow,currentRow-1, currentCol,currentCol);
+                serverConnect.sendMove(currentRow,currentCol, currentRow-1,currentCol);
                 break;
             case KeyEvent.VK_DOWN:
 //                movePiece(currentRow + 1, currentCol); // 아래로 이동
-                serverConnect.sendMove(currentRow,currentRow+1, currentCol,currentCol);
+                serverConnect.sendMove(currentRow,currentCol, currentRow+1,currentCol);
                 break;
             case KeyEvent.VK_LEFT:
 //                movePiece(currentRow, currentCol - 1); // 왼쪽으로 이동
-                serverConnect.sendMove(currentRow,currentRow,currentCol,currentCol-1);
+                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol-1);
                 break;
             case KeyEvent.VK_RIGHT:
 //                movePiece(currentRow, currentCol + 1); // 오른쪽으로 이동
-                serverConnect.sendMove(currentRow,currentRow,currentCol,currentCol+1);
+                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol+1);
                 break;
         }
     }

@@ -5,9 +5,11 @@ public class ReceiveThread extends Thread{
     private ObjectInputStream in;
     private QurridorMsg serverMsg;
     private QurridorUI qurridorUI;
-    public ReceiveThread(ObjectInputStream in, QurridorUI qurridorUI){
+    private MessageQueue qurridorMessageQueue;
+    public ReceiveThread(ObjectInputStream in, QurridorUI qurridorUI, MessageQueue qurridorMessageQueue){
         this.in=in;
         this.qurridorUI=qurridorUI;
+        this.qurridorMessageQueue=qurridorMessageQueue;
     }
     @Override
     public void run(){
@@ -17,18 +19,10 @@ public class ReceiveThread extends Thread{
         try{
             while (true){
                 serverMsg = (QurridorMsg)in.readObject();
-                switch (serverMsg.getNowMode()){
-                    case LOGIN_MODE:
-                        break;
-                    case LOGOUT_MODE:
-                        break;
-                    case CHATTING_MODE:
-                        String msg = serverMsg.getMessage();
-                        qurridorUI.addChat(msg);
-                        break;
-                }
+                qurridorMessageQueue.enqueueMessage(serverMsg);
             }
-        }catch (IOException | ClassNotFoundException e){
+        }
+        catch (IOException | ClassNotFoundException e){
             System.out.println("receive err");
             e.printStackTrace();
         }

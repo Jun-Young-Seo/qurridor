@@ -4,6 +4,8 @@ public class QurridorMsg implements Serializable {
     private String userId;
     private mode nowMode;
     private MoveData moveData;
+
+
     public enum mode{LOGIN_MODE,LOGOUT_MODE,CHATTING_MODE,XML_MODE,PLAY_MODE,WIN_MODE,LOSE_MODE,END_MODE};
     private String message;
     private String fileName;
@@ -107,9 +109,24 @@ public class QurridorMsg implements Serializable {
     public void setMoveData(int fromRow, int fromCol, int toRow, int toCol) {
         this.moveData = new MoveData(fromRow, fromCol, toRow, toCol);
     }
+    //브로드캐스트용
+    public void setMoveData(MoveData moveData){
+        this.moveData = new MoveData(moveData.fromRow, moveData.fromCol, moveData.toRow, moveData.toCol);
+    }
 
     public MoveData getMoveData() {
         return moveData;
     }
-
+    public int getFromRow(){
+        return moveData.fromRow;
+    }
+    public int getToRow(){
+        return moveData.toRow;
+    }
+    public int getFromCol(){
+        return moveData.getFromCol();
+    }
+    public int getToCol(){
+        return moveData.toCol;
+    }
 }
