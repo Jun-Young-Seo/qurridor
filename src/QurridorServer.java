@@ -14,8 +14,8 @@ public class QurridorServer {
     private JTextArea t_display;
     private int port = 12345;
     private ServerSocket serverSocket;
-    private Vector<PlayerHandler> playerConnects = new Vector<>();
-
+    private Vector<PlayerHandler> playerConnects = new Vector<>(2);
+    private boolean assignFirst = false;
     public QurridorServer() {
         buildGUI();
     }
@@ -89,13 +89,22 @@ public class QurridorServer {
                 PlayerHandler playerHandler = new PlayerHandler(clientSocket);
                 playerConnects.add(playerHandler);
                 playerHandler.start();
+                //선 턴 정하기
+                //딱 한번만 실행되면 됨
+                if(playerConnects.size()==2 && !assignFirst){
+                    assignFirst=true;
+                    QurridorMsg assignFirstMsg = new QurridorMsg();
+                    assignFirstMsg.setNowMode(QurridorMsg.mode.FIRST_MODE);
+                    assignFirstMsg.setMessage(playerConnects.get(0).getUserId());
+                    System.out.println(assignFirstMsg.toString());
+                    broadCast(assignFirstMsg);
+                }
             }
         } catch (IOException e) {
             System.out.println(e);
             System.exit(-1);
         }
     }
-
     //그냥 화면에 표시하는 메서드
     public void printDisplay(String msg) {
         t_display.append(msg + "\n");
@@ -158,7 +167,6 @@ public class QurridorServer {
 //                        로그인 모드
                         case LOGIN_MODE:
                             userId = qurridorMsg.getUserId();
-                            System.out.println("set userId : "+userId);
                             printDisplay("클라이언트가 연결되었습니다. : " + clientSocket.getInetAddress());
                             printDisplay("새 참가자 : " + userId);
                             printDisplay("현재 참가자 수 : " + playerConnects.size());
@@ -191,6 +199,10 @@ public class QurridorServer {
                 e.printStackTrace();
             }
 
+        }
+
+        public String getUserId() {
+            return userId;
         }
     }
 }
