@@ -13,12 +13,17 @@ public class QurridorGameController extends KeyAdapter {
     private int rows;
     private int cols;
     private boolean isMyTurn;
-    public QurridorGameController(JPanel gamePanel, JPanel gameArea, int[][] placeMatrix,
+    private boolean[][] verticalObstacleMatrix;   // 세로 장애물 배열
+    private boolean[][] horizontalObstacleMatrix; // 가로 장애물 배열
+
+    public QurridorGameController(JPanel gamePanel, JPanel gameArea, int[][] placeMatrix, boolean[][] v, boolean[][]h,
                                   ServerConnect serverConnect, MessageQueue qurridorMessageQueue, boolean isFirst) {
         this.gamePanel = gamePanel;
         this.placeMatrix = placeMatrix;
         this.gameArea = gameArea;
         this.serverConnect=serverConnect;
+        this.verticalObstacleMatrix=v;
+        this.horizontalObstacleMatrix=h;
         this.qurridorMessageQueue=qurridorMessageQueue;
         this.isMyTurn = isFirst;
         rows=placeMatrix.length;
@@ -75,30 +80,54 @@ public class QurridorGameController extends KeyAdapter {
 
     // 이동 가능한지 검증하는 메서드
     private boolean isValidMove(int fromRow, int toRow, int fromCol, int toCol) {
-        // 범위 밖이면 이동 불가
+        //맵 밖 체크
         if (toRow < 0 || toRow >= rows || toCol < 0 || toCol >= cols) {
             System.out.println("화면 밖!");
             return false;
         }
 
-        // 다른사람 있으면 이동 불가
-        if (placeMatrix[toRow][toCol] == 1) {
-            System.out.println("상대 있음!");
-            return false;
-        }
 
+        int rowDiff = toRow - fromRow;
+        int colDiff = toCol - fromCol;
 
-        if (Math.abs(fromRow - toRow) > 1 || Math.abs(fromCol - toCol) > 1) {
-            return false;
+        // 장애물 체크
+        if (rowDiff == -1) { // 위로 이동
+            System.out.println("UP");
+            if (horizontalObstacleMatrix[toRow + 1][fromCol]) {
+                System.out.println(toRow+1+ ", "+fromCol);
+                System.out.println("위쪽 장애물!");
+                return false;
+            }
+        } else if (rowDiff == 1 ) { // 아래로 이동
+            System.out.println("DOWN");
+            if (horizontalObstacleMatrix[fromRow + 1][fromCol]) {
+                System.out.print(fromRow+1+", "+fromCol);
+                System.out.println("아래쪽 장애물!");
+                return false;
+            }
+        } else if (colDiff == -1) { // 왼쪽으로 이동
+            System.out.println("LEFT");
+            if (verticalObstacleMatrix[fromRow][toCol + 1]) {
+                System.out.println("왼쪽 장애물!");
+                return false;
+            }
+        } else if (colDiff == 1) { // 오른쪽으로 이동
+            System.out.println("RIGHT");
+            if (verticalObstacleMatrix[fromRow][fromCol + 1]) {
+                System.out.println("오른쪽 장애물!");
+                return false;
+            }
         }
 
         return true;
     }
 
+
+
     // KeyListener 메서드 구현
     @Override
     public void keyPressed(KeyEvent e) {
-        System.out.println(e);
+        isMyTurn=true;
         System.out.println("trun : "+isMyTurn);
         if(!isMyTurn){
             System.out.println("not my turn!!");
@@ -120,20 +149,20 @@ public class QurridorGameController extends KeyAdapter {
         // 방향키 입력 처리
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
-//                movePiece(currentRow - 1, currentCol); // 위로 이동
-                serverConnect.sendMove(currentRow,currentCol, currentRow-1,currentCol);
+                movePiece(currentRow,currentRow-1, currentCol,currentCol); // 위로 이동
+//                serverConnect.sendMove(currentRow,currentCol, currentRow-1,currentCol);
                 break;
             case KeyEvent.VK_DOWN:
-//                movePiece(currentRow + 1, currentCol); // 아래로 이동
-                serverConnect.sendMove(currentRow,currentCol, currentRow+1,currentCol);
+                movePiece(currentRow,currentRow+1, currentCol,currentCol); // 아래로 이동
+//                serverConnect.sendMove(currentRow,currentCol, currentRow+1,currentCol);
                 break;
             case KeyEvent.VK_LEFT:
-//                movePiece(currentRow, currentCol - 1); // 왼쪽으로 이동
-                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol-1);
+                movePiece(currentRow,currentRow,currentCol,currentCol-1); // 왼쪽으로 이동
+//                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol-1);
                 break;
             case KeyEvent.VK_RIGHT:
-//                movePiece(currentRow, currentCol + 1); // 오른쪽으로 이동
-                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol+1);
+                movePiece(currentRow,currentRow,currentCol,currentCol+1); // 오른쪽으로 이동
+//                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol+1);
                 break;
         }
     }

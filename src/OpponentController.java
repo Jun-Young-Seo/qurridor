@@ -18,7 +18,7 @@ public class OpponentController {
 
     // 상대방 말 초기화
     public void initializeOpponent() {
-        int startRow = rows - 1; // 초기 위치 (내 화면 기준 맨 아래)
+        int startRow = 0; // 초기 위치 (내 화면 기준 맨 아래)
         int startCol = cols / 2;
 
         opponentMatrix[startRow][startCol] = 1;

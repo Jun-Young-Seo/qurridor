@@ -18,6 +18,8 @@ public class QurridorUI extends JFrame {
     private int howManyCols;
     private int [][] placeMatrix;
     private int [][] opponentMatrix;
+    private boolean[][] verticalObstacleMatrix;
+    private boolean[][] horizontalObstacleMatrix;
     private MessageQueue qurridorMessageQueue;
     private OpponentController opponentController;
     private QurridorGameController qurridorGameController;
@@ -148,7 +150,7 @@ public class QurridorUI extends JFrame {
         ServerConnect serverConnect = new ServerConnect(userId, this, qurridorMessageQueue);
         ProcessMessage processMessage = new ProcessMessage();
         qurridorGameController = new QurridorGameController(gamePanel,gameArea,
-                placeMatrix,serverConnect,qurridorMessageQueue, isFirst);
+                placeMatrix,verticalObstacleMatrix,horizontalObstacleMatrix,serverConnect,qurridorMessageQueue, isFirst);
 
         opponentController = new OpponentController(gameArea, opponentMatrix);
         processMessage.start();
@@ -190,7 +192,8 @@ public class QurridorUI extends JFrame {
     public void setGameArea(int rows, int cols) {
         placeMatrix = new int[rows][cols];
         opponentMatrix = new int[rows][cols];
-
+        verticalObstacleMatrix = new boolean[rows][cols+1];
+        horizontalObstacleMatrix =new boolean[rows+1][cols];
         gameArea = new JPanel();
         gameArea.setLayout(null);
         gameArea.setBackground(Color.WHITE);
@@ -201,12 +204,11 @@ public class QurridorUI extends JFrame {
         int roadWidth = 10;   // 장애물 너비
         int roadHeight = 10;  // 장애물 높이
 
-        // 게임 영역의 크기 동적 계산
         int gameWidth = cols * blockWidth + (cols - 1) * roadWidth;
         int gameHeight = rows * blockHeight + (rows - 1) * roadHeight;
 
         gameArea.setSize(gameWidth, gameHeight);
-
+        ObstacleActionListener obstacleActionListener= new ObstacleActionListener(verticalObstacleMatrix,horizontalObstacleMatrix);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 // 블록 추가
@@ -219,25 +221,31 @@ public class QurridorUI extends JFrame {
 
                 // 수직 길 추가 (각 블록 오른쪽)
                 if (j < cols - 1) {
-                    JLabel verticalRoad = new JLabel();
-                    verticalRoad.setOpaque(true);
-                    verticalRoad.setBackground(Color.BLUE);
-                    verticalRoad.setSize(roadWidth, blockHeight);
-                    verticalRoad.setLocation(block.getX() + blockWidth, block.getY());
-                    gameArea.add(verticalRoad);
+                    Obstacle verticalObstacle = new Obstacle(obstacleActionListener, i, j, true);
+                    verticalObstacle.setSize(roadWidth, blockHeight);
+                    verticalObstacle.setLocation(block.getX() + blockWidth, block.getY());
+                    gameArea.add(verticalObstacle);
                 }
 
                 // 수평 길 추가 (각 블록 아래쪽)
                 if (i < rows - 1) {
-                    JLabel horizontalRoad = new JLabel();
-                    horizontalRoad.setOpaque(true);
-                    horizontalRoad.setBackground(Color.RED);
-                    horizontalRoad.setSize(blockWidth, roadHeight);
-                    horizontalRoad.setLocation(block.getX(), block.getY() + blockHeight);
-                    gameArea.add(horizontalRoad);
+                    Obstacle horizontalObstacle = new Obstacle(obstacleActionListener, i, j, false);
+                    horizontalObstacle.setSize(blockWidth, roadHeight);
+                    horizontalObstacle.setLocation(block.getX(), block.getY() + blockHeight);
+                    gameArea.add(horizontalObstacle);
                 }
             }
         }
+        for (int row = 0; row < rows; row++) {
+            verticalObstacleMatrix[row][0] = true;        // 왼쪽 벽
+            verticalObstacleMatrix[row][cols] = true;     // 오른쪽 벽
+        }
+        // 위쪽과 아래쪽 가장자리 벽 설정
+        for (int col = 0; col < cols; col++) {
+            horizontalObstacleMatrix[0][col] = true;       // 위쪽 벽
+            horizontalObstacleMatrix[rows][col] = true;    // 아래쪽 벽
+        }
+
     }
 
     private class ProcessMessage extends Thread{
