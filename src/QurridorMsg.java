@@ -5,7 +5,6 @@ public class QurridorMsg implements Serializable {
     private mode nowMode;
     private MoveData moveData;
 
-
     public enum mode{LOGIN_MODE,LOGOUT_MODE,CHATTING_MODE,XML_MODE,PLAY_MODE,WIN_MODE,LOSE_MODE,END_MODE,FIRST_MODE};
     private String message;
     private String fileName;
