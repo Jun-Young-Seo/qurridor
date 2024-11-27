@@ -4,9 +4,10 @@ public class QurridorMsg implements Serializable {
     private String userId;
     private mode nowMode;
     private MoveData moveData;
+    private boolean [][] verticalObstacleMatrix;
+    private boolean [][] horizontalObstacleMatrix;
 
-
-    public enum mode{LOGIN_MODE,LOGOUT_MODE,CHATTING_MODE,XML_MODE,PLAY_MODE,WIN_MODE,LOSE_MODE,END_MODE,FIRST_MODE};
+    public enum mode{LOGIN_MODE,LOGOUT_MODE,CHATTING_MODE,XML_MODE,PLAY_MODE,OBSTACLE_MODE,WIN_MODE,LOSE_MODE,END_MODE,FIRST_MODE};
     private String message;
     private String fileName;
     private byte [] fileData;//파일 데이터를 담을 배열 --> 1k 버퍼처럼 사용
@@ -49,6 +50,39 @@ public class QurridorMsg implements Serializable {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public boolean[][] getHorizontalObstacleMatrix() {
+        return horizontalObstacleMatrix;
+    }
+
+    public boolean[][] getVerticalObstacleMatrix() {
+        return verticalObstacleMatrix;
+    }
+    public void printObstacle(){
+        System.out.println("V");
+        for(int i=0; i<verticalObstacleMatrix.length; i++){
+            for(int n=0; n<verticalObstacleMatrix[0].length; n++){
+                System.out.print(verticalObstacleMatrix[i][n]+" ");
+            }
+            System.out.println();
+        }
+
+        System.out.println("H");
+        for(int i=0;i<horizontalObstacleMatrix.length; i++){
+            for(int n=0; n<horizontalObstacleMatrix[0].length; n++){
+                System.out.print(horizontalObstacleMatrix[i][n]+" ");
+            }
+            System.out.println();
+        }
+    }
+
+    public void setHorizontalObstacleMatrix(boolean[][] horizontalObstacleMatrix) {
+        this.horizontalObstacleMatrix = horizontalObstacleMatrix;
+    }
+
+    public void setVerticalObstacleMatrix(boolean[][] verticalObstacleMatrix) {
+        this.verticalObstacleMatrix = verticalObstacleMatrix;
     }
 
     @Override

@@ -193,6 +193,13 @@ public class QurridorServer {
                             gameMsg.setMoveData(qurridorMsg.getMoveData());
                             broadCast(gameMsg);
                             break;
+                        case OBSTACLE_MODE:
+                            QurridorMsg obstacleMsg = new QurridorMsg();
+                            obstacleMsg.setNowMode(QurridorMsg.mode.OBSTACLE_MODE);
+                            obstacleMsg.setUserId(userId);
+                            obstacleMsg.setHorizontalObstacleMatrix(qurridorMsg.getHorizontalObstacleMatrix());
+                            obstacleMsg.setVerticalObstacleMatrix(qurridorMsg.getVerticalObstacleMatrix());
+                            broadCast(obstacleMsg);
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
