@@ -127,7 +127,6 @@ public class QurridorGameController extends KeyAdapter {
     // KeyListener 메서드 구현
     @Override
     public void keyPressed(KeyEvent e) {
-        isMyTurn=true;
         System.out.println("trun : "+isMyTurn);
         if(!isMyTurn){
             System.out.println("not my turn!!");
@@ -149,20 +148,20 @@ public class QurridorGameController extends KeyAdapter {
         // 방향키 입력 처리
         switch (e.getKeyCode()) {
             case KeyEvent.VK_UP:
-                movePiece(currentRow,currentRow-1, currentCol,currentCol); // 위로 이동
-//                serverConnect.sendMove(currentRow,currentCol, currentRow-1,currentCol);
+//                movePiece(currentRow,currentRow-1, currentCol,currentCol); // 위로 이동
+                serverConnect.sendMove(currentRow,currentCol, currentRow-1,currentCol);
                 break;
             case KeyEvent.VK_DOWN:
-                movePiece(currentRow,currentRow+1, currentCol,currentCol); // 아래로 이동
-//                serverConnect.sendMove(currentRow,currentCol, currentRow+1,currentCol);
+//                movePiece(currentRow,currentRow+1, currentCol,currentCol); // 아래로 이동
+                serverConnect.sendMove(currentRow,currentCol, currentRow+1,currentCol);
                 break;
             case KeyEvent.VK_LEFT:
-                movePiece(currentRow,currentRow,currentCol,currentCol-1); // 왼쪽으로 이동
-//                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol-1);
+//                movePiece(currentRow,currentRow,currentCol,currentCol-1); // 왼쪽으로 이동
+                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol-1);
                 break;
             case KeyEvent.VK_RIGHT:
-                movePiece(currentRow,currentRow,currentCol,currentCol+1); // 오른쪽으로 이동
-//                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol+1);
+//                movePiece(currentRow,currentRow,currentCol,currentCol+1); // 오른쪽으로 이동
+                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol+1);
                 break;
         }
     }

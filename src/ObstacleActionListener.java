@@ -5,10 +5,13 @@ import java.awt.event.ActionListener;
 public class ObstacleActionListener implements ActionListener {
     private boolean[][] verticalObstacleMatrix;
     private boolean[][] horizontalObstacleMatrix;
+    private ServerConnect serverConnect;
 
-    public ObstacleActionListener(boolean[][] verticalObstacleMatrix, boolean[][] horizontalObstacleMatrix) {
+    public ObstacleActionListener(boolean[][] verticalObstacleMatrix, boolean[][] horizontalObstacleMatrix,
+                                  ServerConnect serverConnect) {
         this.verticalObstacleMatrix = verticalObstacleMatrix;
         this.horizontalObstacleMatrix = horizontalObstacleMatrix;
+        this.serverConnect=serverConnect;
     }
 
     @Override
@@ -31,5 +34,6 @@ public class ObstacleActionListener implements ActionListener {
 
         clickedObstacle.setBackground(Color.CYAN);
         clickedObstacle.setObstacle(true);
+        serverConnect.sendObstacle(verticalObstacleMatrix,horizontalObstacleMatrix);
     }
 }

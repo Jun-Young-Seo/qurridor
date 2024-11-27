@@ -73,4 +73,19 @@ public class ServerConnect {
             e.printStackTrace();
         }
     }
+    public void sendObstacle(boolean[][] v, boolean[][] h){
+        QurridorMsg obstacleMsg = new QurridorMsg();
+        obstacleMsg.setUserId(userId);
+        obstacleMsg.setNowMode(QurridorMsg.mode.OBSTACLE_MODE);
+        obstacleMsg.setVerticalObstacleMatrix(v);
+        obstacleMsg.setHorizontalObstacleMatrix(h);
+        try{
+            out.writeObject(obstacleMsg);
+            out.flush();
+        }
+        catch(IOException e){
+            System.out.println("obstacle send err");
+            e.printStackTrace();
+        }
+    }
 }

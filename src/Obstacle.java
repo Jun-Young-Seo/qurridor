@@ -7,12 +7,11 @@ public class Obstacle extends JButton {
     private boolean isVertical; // true: 수직 장애물, false: 수평 장애물
     private boolean isObstacle;
 
-    public Obstacle(ActionListener actionListener, int row, int col, boolean isVertical) {
+    public Obstacle(int row, int col, boolean isVertical) {
         this.row = row;
         this.col = col;
         this.isVertical = isVertical;
         this.isObstacle = false; // 초기에는 장애물이 설치되어 있지 않음
-        this.addActionListener(actionListener);
     }
 
     // Getter 메서드 추가

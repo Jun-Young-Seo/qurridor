@@ -67,6 +67,7 @@ public class QurridorUI extends JFrame {
         JLabel bottomStatusLabel = new JLabel("하단 상태 표시줄", SwingConstants.CENTER);
         bottomStatusBar.add(bottomStatusLabel);
 
+        serverConnect = new ServerConnect(userId, this, qurridorMessageQueue);
         // 게임 영역 설정 및 정중앙 배치
         setGameArea(howManyRows, howManyCols);
         int centerX = (gamePanel.getWidth() - gameArea.getWidth()) / 2;
@@ -147,7 +148,7 @@ public class QurridorUI extends JFrame {
         this.revalidate();
         this.repaint();
 
-        ServerConnect serverConnect = new ServerConnect(userId, this, qurridorMessageQueue);
+
         ProcessMessage processMessage = new ProcessMessage();
         qurridorGameController = new QurridorGameController(gamePanel,gameArea,
                 placeMatrix,verticalObstacleMatrix,horizontalObstacleMatrix,serverConnect,qurridorMessageQueue, isFirst);
@@ -208,7 +209,18 @@ public class QurridorUI extends JFrame {
         int gameHeight = rows * blockHeight + (rows - 1) * roadHeight;
 
         gameArea.setSize(gameWidth, gameHeight);
-        ObstacleActionListener obstacleActionListener= new ObstacleActionListener(verticalObstacleMatrix,horizontalObstacleMatrix);
+        for (int row = 0; row < rows; row++) {
+            verticalObstacleMatrix[row][0] = true;        // 왼쪽 벽
+            verticalObstacleMatrix[row][cols] = true;     // 오른쪽 벽
+        }
+        // 위쪽과 아래쪽 가장자리 벽 설정
+        for (int col = 0; col < cols; col++) {
+            horizontalObstacleMatrix[0][col] = true;       // 위쪽 벽
+            horizontalObstacleMatrix[rows][col] = true;    // 아래쪽 벽
+        }
+
+        ObstacleActionListener obstacleActionListener= new ObstacleActionListener(verticalObstacleMatrix,
+                                                        horizontalObstacleMatrix,serverConnect);
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 // 블록 추가
@@ -221,29 +233,22 @@ public class QurridorUI extends JFrame {
 
                 // 수직 길 추가 (각 블록 오른쪽)
                 if (j < cols - 1) {
-                    Obstacle verticalObstacle = new Obstacle(obstacleActionListener, i, j, true);
+                    Obstacle verticalObstacle = new Obstacle(i, j, true);
                     verticalObstacle.setSize(roadWidth, blockHeight);
                     verticalObstacle.setLocation(block.getX() + blockWidth, block.getY());
+                    verticalObstacle.addActionListener(obstacleActionListener);
                     gameArea.add(verticalObstacle);
                 }
 
                 // 수평 길 추가 (각 블록 아래쪽)
                 if (i < rows - 1) {
-                    Obstacle horizontalObstacle = new Obstacle(obstacleActionListener, i, j, false);
+                    Obstacle horizontalObstacle = new Obstacle(i, j, false);
                     horizontalObstacle.setSize(blockWidth, roadHeight);
                     horizontalObstacle.setLocation(block.getX(), block.getY() + blockHeight);
+                    horizontalObstacle.addActionListener(obstacleActionListener);
                     gameArea.add(horizontalObstacle);
                 }
             }
-        }
-        for (int row = 0; row < rows; row++) {
-            verticalObstacleMatrix[row][0] = true;        // 왼쪽 벽
-            verticalObstacleMatrix[row][cols] = true;     // 오른쪽 벽
-        }
-        // 위쪽과 아래쪽 가장자리 벽 설정
-        for (int col = 0; col < cols; col++) {
-            horizontalObstacleMatrix[0][col] = true;       // 위쪽 벽
-            horizontalObstacleMatrix[rows][col] = true;    // 아래쪽 벽
         }
 
     }
@@ -293,6 +298,15 @@ public class QurridorUI extends JFrame {
                                 qurridorGameController.setMyTurn(true);
                             }
                             break;
+                        case OBSTACLE_MODE:
+                            if(id.equals(userId)){
+                                System.out.println("ME");
+                                serverMsg.printObstacle();
+                            }
+                            else{
+                                System.out.println("ENEMY");
+                                serverMsg.printObstacle();
+                            }
                     }
                 }
             }
