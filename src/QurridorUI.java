@@ -302,10 +302,14 @@ public class QurridorUI extends JFrame {
                             if(id.equals(userId)){
                                 System.out.println("ME");
                                 serverMsg.printObstacle();
+                                qurridorGameController.setObstacle(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
+                                qurridorGameController.setMyTurn(false);
                             }
                             else{
                                 System.out.println("ENEMY");
                                 serverMsg.printObstacle();
+                                opponentController.setOpponentObstacle(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
+                                qurridorGameController.setMyTurn(true);
                             }
                     }
                 }

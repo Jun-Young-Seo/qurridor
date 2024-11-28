@@ -122,6 +122,40 @@ public class QurridorGameController extends KeyAdapter {
         return true;
     }
 
+    public void setObstacle(boolean[][] verticalObstacleMatrix, boolean[][] horizontalObstacleMatrix){
+        this.verticalObstacleMatrix = verticalObstacleMatrix;
+        this.horizontalObstacleMatrix = horizontalObstacleMatrix;
+
+        // 게임 보드의 컴포넌트들을 순회하여 Obstacle 버튼들을 찾습니다.
+        Component[] components = gameArea.getComponents();
+        for (Component comp : components) {
+            if (comp instanceof Obstacle) {
+                Obstacle obstacle = (Obstacle) comp;
+                int row = obstacle.getRow();
+                int col = obstacle.getCol();
+                boolean isVertical = obstacle.isVertical();
+                boolean isObstacleSet;
+
+                if (isVertical) {
+                    // 수직 장애물 배열에서 해당 위치의 값 가져오기
+                    isObstacleSet = verticalObstacleMatrix[row][col + 1];
+                } else {
+                    // 수평 장애물 배열에서 해당 위치의 값 가져오기
+                    isObstacleSet = horizontalObstacleMatrix[row + 1][col];
+                }
+
+                // Obstacle의 상태와 UI 업데이트
+                obstacle.setObstacle(isObstacleSet);
+                if (isObstacleSet) {
+                    obstacle.setBackground(Color.CYAN); // 장애물이 설치된 경우
+                } else {
+                    obstacle.setBackground(Color.LIGHT_GRAY); // 장애물이 없는 경우
+                }
+            }
+        }
+
+        gameArea.repaint();
+    }
 
 
     // KeyListener 메서드 구현

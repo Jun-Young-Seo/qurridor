@@ -32,7 +32,7 @@ public class ObstacleActionListener implements ActionListener {
             horizontalObstacleMatrix[row + 1][col] = true; // 행 인덱스에 +1
         }
 
-        clickedObstacle.setBackground(Color.CYAN);
+//        clickedObstacle.setBackground(Color.CYAN);
         clickedObstacle.setObstacle(true);
         serverConnect.sendObstacle(verticalObstacleMatrix,horizontalObstacleMatrix);
     }
