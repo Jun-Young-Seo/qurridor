@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.*;
 import java.net.Socket;
 
@@ -18,7 +19,7 @@ public class ServerConnect {
         this.userId=userId;
         this.qurridorUI=qurridorUI;
         this.qurridorMessageQueue=qurriodrMessageQueue;
-        System.out.println("ServerConnect : "+qurriodrMessageQueue);
+
         try {
             socket= new Socket(serverAddress,serverPort);
             outputStream = socket.getOutputStream();
@@ -39,6 +40,7 @@ public class ServerConnect {
         QurridorMsg loginMsg = new QurridorMsg();
         loginMsg.setNowMode(QurridorMsg.mode.LOGIN_MODE);
         loginMsg.setUserId(userId);
+        System.out.println("set Id : "+userId);
         try {
             out.writeObject(loginMsg);
             out.flush();
@@ -60,25 +62,24 @@ public class ServerConnect {
             e.printStackTrace();
         }
     }
-    public void sendMove(int fromRow, int fromCol, int toRow, int toCol){
+
+    public void sendMove(GameObject [][] gameBoard){
         QurridorMsg gameMsg = new QurridorMsg();
         gameMsg.setUserId(userId);
         gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
-        gameMsg.setMoveData(fromRow,fromCol,toRow,toCol);
-        try {
+        gameMsg.setGameBoard(gameBoard);
+        try{
             out.writeObject(gameMsg);
             out.flush();
         } catch (IOException e) {
-            System.out.println("Send Move err");
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
-    public void sendObstacle(boolean[][] v, boolean[][] h){
+    public void sendObstacle(GameObject[][] gameBoard){
         QurridorMsg obstacleMsg = new QurridorMsg();
         obstacleMsg.setUserId(userId);
         obstacleMsg.setNowMode(QurridorMsg.mode.OBSTACLE_MODE);
-        obstacleMsg.setVerticalObstacleMatrix(v);
-        obstacleMsg.setHorizontalObstacleMatrix(h);
+        obstacleMsg.setGameBoard(gameBoard);
         try{
             out.writeObject(obstacleMsg);
             out.flush();

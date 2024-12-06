@@ -16,16 +16,16 @@ public class QurridorUI extends JFrame {
     private JPanel gameArea;
     private int howManyRows;
     private int howManyCols;
-    private int [][] placeMatrix;
-    private int [][] opponentMatrix;
-    private boolean[][] verticalObstacleMatrix;
-    private boolean[][] horizontalObstacleMatrix;
+    private GameObject[][] gameBoard;
     private MessageQueue qurridorMessageQueue;
-    private OpponentController opponentController;
     private QurridorGameController qurridorGameController;
-    private final String userId = String.valueOf(Math.random());
+    private OpponentController opponentController;
+    private final String userId = String.valueOf((int) (Math.random() * 100));
+    private String secondUserId;
+    private String opponentId;
     private boolean isFirst = false;
     ServerConnect serverConnect;
+    private ObstacleActionListener obstacleActionListener;
     public QurridorUI() {
         qurridorMessageQueue = new MessageQueue();
 
@@ -69,7 +69,7 @@ public class QurridorUI extends JFrame {
 
         serverConnect = new ServerConnect(userId, this, qurridorMessageQueue);
         // 게임 영역 설정 및 정중앙 배치
-        setGameArea(howManyRows, howManyCols);
+        setGameArea();
         int centerX = (gamePanel.getWidth() - gameArea.getWidth()) / 2;
         int centerY = (gamePanel.getHeight() - gameArea.getHeight()) / 2;
         gameArea.setLocation(centerX, centerY);
@@ -149,11 +149,7 @@ public class QurridorUI extends JFrame {
         this.repaint();
 
 
-        ProcessMessage processMessage = new ProcessMessage();
-        qurridorGameController = new QurridorGameController(gamePanel,gameArea,
-                placeMatrix,verticalObstacleMatrix,horizontalObstacleMatrix,serverConnect,qurridorMessageQueue, isFirst);
-
-        opponentController = new OpponentController(gameArea, opponentMatrix);
+        ProcessMessage processMessage = new ProcessMessage(this);
         processMessage.start();
 
         // 버튼 리스너 추가
@@ -188,72 +184,140 @@ public class QurridorUI extends JFrame {
         Node settingNode = xmlReader.getSettingElement();
         howManyRows = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYROWS));
         howManyCols = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYCOLS));
+
     }
 
-    public void setGameArea(int rows, int cols) {
-        placeMatrix = new int[rows][cols];
-        opponentMatrix = new int[rows][cols];
-        verticalObstacleMatrix = new boolean[rows][cols+1];
-        horizontalObstacleMatrix =new boolean[rows+1][cols];
+    public void setGameArea() {
         gameArea = new JPanel();
         gameArea.setLayout(null);
         gameArea.setBackground(Color.WHITE);
+        int boardRows = 2 * howManyRows - 1;
+        int boardCols = 2 * howManyCols - 1;
+        gameBoard = new GameObject[boardRows][boardCols];
 
         // 블록 및 장애물 크기 고정
         int blockWidth = 60;  // 블록 너비
         int blockHeight = 60; // 블록 높이
         int roadWidth = 10;   // 장애물 너비
         int roadHeight = 10;  // 장애물 높이
+        int totalWidth = (howManyCols * blockWidth) + ((howManyCols - 1) * roadWidth);
+        int totalHeight = (howManyRows * blockHeight) + ((howManyRows - 1) * roadHeight);
 
-        int gameWidth = cols * blockWidth + (cols - 1) * roadWidth;
-        int gameHeight = rows * blockHeight + (rows - 1) * roadHeight;
+        obstacleActionListener= new ObstacleActionListener(gameBoard,serverConnect);
 
-        gameArea.setSize(gameWidth, gameHeight);
-        for (int row = 0; row < rows; row++) {
-            verticalObstacleMatrix[row][0] = true;        // 왼쪽 벽
-            verticalObstacleMatrix[row][cols] = true;     // 오른쪽 벽
-        }
-        // 위쪽과 아래쪽 가장자리 벽 설정
-        for (int col = 0; col < cols; col++) {
-            horizontalObstacleMatrix[0][col] = true;       // 위쪽 벽
-            horizontalObstacleMatrix[rows][col] = true;    // 아래쪽 벽
-        }
+        gameArea.setSize(totalWidth, totalHeight);
+        gameArea.setBackground(Color.WHITE);
+        for (int r = 0; r < gameBoard.length; r++) {
+            for (int c = 0; c < gameBoard[0].length; c++) {
+                if (r % 2 == 0 && c % 2 == 0) {
+                    // 짝수행, 짝수열 -> 블록
+                    Block block = new Block(r,c);
 
-        ObstacleActionListener obstacleActionListener= new ObstacleActionListener(verticalObstacleMatrix,
-                                                        horizontalObstacleMatrix,serverConnect);
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                // 블록 추가
-                JLabel block = new JLabel();
-                block.setOpaque(true);
-//                block.setBackground(Color.BLACK);
-                block.setSize(blockWidth, blockHeight);
-                block.setLocation(j * (blockWidth + roadWidth), i * (blockHeight + roadHeight));
-                gameArea.add(block);
+                    JLabel blockLabel = new JLabel();
+                    blockLabel.setOpaque(true);
+                    blockLabel.setBackground(Color.WHITE);
+                    int x = (c / 2) * (blockWidth + roadWidth);
+                    int y = (r / 2) * (blockHeight + roadHeight);
+                    blockLabel.setBounds(x, y, blockWidth, blockHeight);
+                    gameArea.add(blockLabel);
+                    gameBoard[r][c] = block;
+                } else if (r % 2 == 0) {
+                    // 짝수행, 홀수열 -> 수직 장애물
+                    Obstacle verticalObstacle = new Obstacle(r,c,true);
 
-                // 수직 길 추가 (각 블록 오른쪽)
-                if (j < cols - 1) {
-                    Obstacle verticalObstacle = new Obstacle(i, j, true);
-                    verticalObstacle.setSize(roadWidth, blockHeight);
-                    verticalObstacle.setLocation(block.getX() + blockWidth, block.getY());
-                    verticalObstacle.addActionListener(obstacleActionListener);
-                    gameArea.add(verticalObstacle);
+                    JButton verticalObstacleButton = new JButton();
+                    verticalObstacleButton.setOpaque(true);
+                    verticalObstacleButton.setBackground(Color.RED);
+                    int x = (c / 2) * (blockWidth + roadWidth) + blockWidth;
+                    int y = (r / 2) * (blockHeight + roadHeight);
+                    verticalObstacleButton.setBounds(x, y, roadWidth, blockHeight);
+                    verticalObstacleButton.addActionListener(obstacleActionListener);
+                    gameArea.add(verticalObstacleButton);
+                    gameBoard[r][c] = verticalObstacle;
+                } else if (c % 2 == 0) {
+                    // 홀수행, 짝수열 -> 수평 장애물
+                    Obstacle horizontalObstacle = new Obstacle(r,c,false);
+
+                    JButton horizontalObstacleButton = new JButton();
+                    horizontalObstacleButton.setOpaque(true);
+                    horizontalObstacleButton.setBackground(Color.CYAN);
+                    int x = (c / 2) * (blockWidth + roadWidth);
+                    int y = (r / 2) * (blockHeight + roadHeight) + blockHeight;
+                    horizontalObstacleButton.setBounds(x, y, blockWidth, roadHeight);
+                    horizontalObstacleButton.addActionListener(obstacleActionListener);
+                    gameArea.add(horizontalObstacleButton);
+                    gameBoard[r][c] = horizontalObstacle;
                 }
+            }
+        }
+        // 플레이어 초기 위치 설정
+        int playerRow = gameBoard.length - 1;
+        int playerCol = gameBoard[0].length / 2;
+        if (gameBoard[playerRow][playerCol] instanceof Block) {
+            System.out.println("block player");
+            System.out.println(playerRow+", "+playerCol);
+            ((Block) gameBoard[playerRow][playerCol]).setBlockStatus(1);
+        }
 
-                // 수평 길 추가 (각 블록 아래쪽)
-                if (i < rows - 1) {
-                    Obstacle horizontalObstacle = new Obstacle(i, j, false);
-                    horizontalObstacle.setSize(blockWidth, roadHeight);
-                    horizontalObstacle.setLocation(block.getX(), block.getY() + blockHeight);
-                    horizontalObstacle.addActionListener(obstacleActionListener);
-                    gameArea.add(horizontalObstacle);
+        // 상대방 초기 위치 설정
+        int opponentRow = 0;
+        int opponentCol = gameBoard[0].length / 2;
+        if (gameBoard[opponentRow][opponentCol] instanceof Block) {
+            ((Block) gameBoard[opponentRow][opponentCol]).setBlockStatus(-1);
+        }
+
+        qurridorGameController = new QurridorGameController(gamePanel,gameArea,
+                gameBoard,serverConnect, userId,this);
+        opponentController = new OpponentController(gameArea,gameBoard,this,isFirst);
+
+    }
+    public void renderGameArea(GameObject[][] gameBoard) {
+        gameArea.removeAll();
+
+        int blockSize = 60;
+        int obstacleSize = 10;
+
+        for (int r = 0; r < gameBoard.length; r++) {
+            for (int c = 0; c < gameBoard[0].length; c++) {
+                GameObject obj = gameBoard[r][c];
+                if (obj instanceof Block) {
+                    Block block = (Block) obj;
+                    JLabel blockLabel = new JLabel();
+                    blockLabel.setOpaque(true);
+                    if(block.getUserId().equals(userId)){
+                        blockLabel.setBackground(Color.GREEN);
+                    }
+                    else if(block.getUserId().equals(secondUserId)){
+                        blockLabel.setBackground(Color.RED);
+                    }
+                    else if(block.getUserId().isEmpty()){
+                        blockLabel.setBackground(Color.WHITE);
+                    }
+                    blockLabel.setBounds(c / 2 * (blockSize + obstacleSize), r / 2 * (blockSize + obstacleSize), blockSize, blockSize);
+                    gameArea.add(blockLabel);
+                } else if (obj instanceof Obstacle) {
+                    Obstacle obstacle = (Obstacle) obj;
+                    JButton obstacleButton = new JButton();
+                    obstacleButton.setBackground(obstacle.isObstacle() ? Color.RED : Color.LIGHT_GRAY);
+                    if (obstacle.isVertical()) {
+                        obstacleButton.setBounds(c / 2 * (blockSize + obstacleSize) + blockSize, r / 2 * (blockSize + obstacleSize), obstacleSize, blockSize);
+                    } else {
+                        obstacleButton.setBounds(c / 2 * (blockSize + obstacleSize), r / 2 * (blockSize + obstacleSize) + blockSize, blockSize, obstacleSize);
+                    }
+                    gameArea.add(obstacleButton);
                 }
             }
         }
 
+        gameArea.revalidate();
+        gameArea.repaint();
     }
 
     private class ProcessMessage extends Thread{
+        QurridorUI qurridorUI;
+        private ProcessMessage(QurridorUI qurridorUI){
+            this.qurridorUI=qurridorUI;
+        }
         @Override
         public void run(){
             while (true) {
@@ -262,9 +326,14 @@ public class QurridorUI extends JFrame {
                     String id = serverMsg.getUserId();
                     switch (serverMsg.getNowMode()) {
                         case LOGIN_MODE:
+                            if(!id.equals(userId)){
+                                opponentId=id;
+                                chatArea.append(opponentId+" Login \n");
+                            }
                             break;
                         case LOGOUT_MODE:
                             break;
+
                         case CHATTING_MODE:
                             String msg = serverMsg.getMessage();
                             if(id.equals(userId)) {
@@ -275,41 +344,51 @@ public class QurridorUI extends JFrame {
                             }
                             break;
                         case FIRST_MODE:
-                            String whoFirst = serverMsg.getMessage();
-                            if(userId.equals(whoFirst)){
+                            String message = serverMsg.getMessage();
+                            System.out.println("ID : "+message);
+                            String[] ids = message.split(",");
+
+                            String firstPlayerId = ids[0].trim();
+                            String secondPlayerId = ids[1].trim();
+                            System.out.println(firstPlayerId);
+                            System.out.println(secondPlayerId);
+                            secondUserId=secondPlayerId;
+                            if(userId.equals(firstPlayerId)){
                                 isFirst = true;
                                 chatArea.append("선턴입니다.");
-                                qurridorGameController.setMyTurn(true);
+                                qurridorGameController.startGame(true,userId,secondPlayerId); // 첫 번째 플레이어로 게임 시작
                             }
-                            else{
+                            else if(userId.equals(secondPlayerId)){
                                 chatArea.append("상대가 선턴입니다.");
-                                qurridorGameController.setMyTurn(false);
+                                qurridorGameController.startGame(false,firstPlayerId,userId); // 두 번째 플레이어로 게임 시작
                             }
                             break;
                         case PLAY_MODE:
+                            System.out.println("userID : "+userId);
                             if(id.equals(userId)) {
-                                qurridorGameController.movePiece(serverMsg.getFromRow(), serverMsg.getToRow()
-                                        , serverMsg.getFromCol(), serverMsg.getToCol());
+                                gameBoard = serverMsg.getGameBoard();
+                                qurridorGameController.updateGameBoardFromServer(gameBoard);
+
                                 qurridorGameController.setMyTurn(false);
                             }
                             else{
-                                opponentController.moveOpponentPiece(serverMsg.getFromRow(), serverMsg.getToRow()
-                                        , serverMsg.getFromCol(), serverMsg.getToCol());
+                                gameBoard= serverMsg.getGameBoard();
+                                opponentController.updateGameBoardFromServer(gameBoard);
                                 qurridorGameController.setMyTurn(true);
                             }
                             break;
                         case OBSTACLE_MODE:
                             if(id.equals(userId)){
                                 System.out.println("ME");
-                                serverMsg.printObstacle();
-                                qurridorGameController.setObstacle(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
-                                qurridorGameController.setMyTurn(false);
+//                                qurridorGameController.setObstacle(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
+//                                opponentController.updateMatrix(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
+//                                qurridorGameController.setMyTurn(false);
                             }
                             else{
                                 System.out.println("ENEMY");
-                                serverMsg.printObstacle();
-                                opponentController.setOpponentObstacle(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
-                                qurridorGameController.setMyTurn(true);
+//                                opponentController.setOpponentObstacles(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
+//                                qurridorGameController.updateMatrix(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
+//                                qurridorGameController.setMyTurn(true);
                             }
                     }
                 }

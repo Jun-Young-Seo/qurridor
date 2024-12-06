@@ -1,16 +1,12 @@
-import java.awt.*;
+import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 public class ObstacleActionListener implements ActionListener {
-    private boolean[][] verticalObstacleMatrix;
-    private boolean[][] horizontalObstacleMatrix;
+    private GameObject[][] gameBoard;
     private ServerConnect serverConnect;
-
-    public ObstacleActionListener(boolean[][] verticalObstacleMatrix, boolean[][] horizontalObstacleMatrix,
-                                  ServerConnect serverConnect) {
-        this.verticalObstacleMatrix = verticalObstacleMatrix;
-        this.horizontalObstacleMatrix = horizontalObstacleMatrix;
+    public ObstacleActionListener(GameObject[][] gameBoard, ServerConnect serverConnect) {
+        this.gameBoard=gameBoard;
         this.serverConnect=serverConnect;
     }
 
@@ -26,14 +22,7 @@ public class ObstacleActionListener implements ActionListener {
         int row = clickedObstacle.getRow();
         int col = clickedObstacle.getCol();
 
-        if (clickedObstacle.isVertical()) {
-            verticalObstacleMatrix[row][col + 1] = true; // 열 인덱스에 +1
-        } else {
-            horizontalObstacleMatrix[row + 1][col] = true; // 행 인덱스에 +1
-        }
-
-//        clickedObstacle.setBackground(Color.CYAN);
         clickedObstacle.setObstacle(true);
-        serverConnect.sendObstacle(verticalObstacleMatrix,horizontalObstacleMatrix);
+        serverConnect.sendObstacle(gameBoard);
     }
 }

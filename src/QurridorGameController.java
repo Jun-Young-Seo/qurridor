@@ -1,205 +1,190 @@
 import javax.swing.*;
-import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
 public class QurridorGameController extends KeyAdapter {
-    private JPanel gamePanel; // 게임 보드 패널
+    private JPanel gamePanel;
     private JPanel gameArea;
-    private int[][] placeMatrix; // 말의 위치를 관리하는 배열
-    private JLabel player; // 말 UI
     private ServerConnect serverConnect;
-    private MessageQueue qurridorMessageQueue;
-    private int rows;
-    private int cols;
+    private GameObject[][] gameBoard;
     private boolean isMyTurn;
-    private boolean[][] verticalObstacleMatrix;   // 세로 장애물 배열
-    private boolean[][] horizontalObstacleMatrix; // 가로 장애물 배열
+    private String userId;
+    private QurridorUI qurridorUI;
 
-    public QurridorGameController(JPanel gamePanel, JPanel gameArea, int[][] placeMatrix, boolean[][] v, boolean[][]h,
-                                  ServerConnect serverConnect, MessageQueue qurridorMessageQueue, boolean isFirst) {
+    // 내 현재 위치
+    private int nowRow;
+    private int nowCol;
+
+    public QurridorGameController(JPanel gamePanel, JPanel gameArea, GameObject[][] gameBoard,
+                                  ServerConnect serverConnect, String userId, QurridorUI qurridorUI) {
         this.gamePanel = gamePanel;
-        this.placeMatrix = placeMatrix;
         this.gameArea = gameArea;
-        this.serverConnect=serverConnect;
-        this.verticalObstacleMatrix=v;
-        this.horizontalObstacleMatrix=h;
-        this.qurridorMessageQueue=qurridorMessageQueue;
-        this.isMyTurn = isFirst;
-        rows=placeMatrix.length;
-        cols=placeMatrix[0].length;
-        playerInit();
+        this.serverConnect = serverConnect;
+        this.gameBoard = gameBoard;
+        this.userId = userId;
+        this.qurridorUI = qurridorUI;
 
-        // 키보드 입력 이벤트 추가
-        gameArea.setFocusable(true); // 키 입력 받을 수 있도록 설정
+        // 초기화는 별도 메서드에서 처리
+        this.isMyTurn = false; // 기본값
+        this.nowRow = -1; // 초기화 전 위치 미정
+        this.nowCol = -1; // 초기화 전 위치 미정
+
+        gameArea.setFocusable(true);
         gameArea.addKeyListener(this);
     }
 
-    // 말 초기화
-    public void playerInit() {
-        // 말의 초기 위치 (아래 행, 가운데 열)
-        int startRow = rows - 1;
-        int startCol = cols / 2;
+    // 게임 시작 메서드
+    public void startGame(boolean isFirst,String firstPlayerId, String secondPlayerId) {
+        this.isMyTurn = isFirst;
+        System.out.println("Start game~~");
+        // 플레이어의 시작 위치 설정
+        // isFirst가 true면 firstPlayer Id = userID
+        if (isFirst) {
+            nowRow = gameBoard.length - 1; // 맨 아래
+            System.out.println(userId+ " 플레이어가 아래에서 시작합니다.");
+        } else {
+            nowRow = 0; // 맨 위
+            System.out.println(userId + "플레이어가 위에서 시작합니다.");
+        }
+        nowCol = gameBoard[0].length / 2; // 중앙
 
-        // placeMatrix에 위치 표시
-        placeMatrix[startRow][startCol] = 1;
+        // 내 말 초기 상태 설정
+        if (gameBoard[nowRow][nowCol] instanceof Block) {
+            ((Block) gameBoard[nowRow][nowCol]).setUserId(firstPlayerId); // 내 말은 1
+        }
 
-        // 말 UI 생성
-        player = new JLabel();
-        player.setOpaque(true);
-        player.setBackground(Color.GREEN); // 말의 색상
-        player.setSize(60, 60); // 말의 크기 (블록 크기와 동일)
-        player.setLocation(startCol * 70, startRow * 70); // 위치 설정 (블록과 장애물 크기 반영)
+        // 상대방 말 초기 상태 설정
+        int opponentRow = isFirst ? 0 : gameBoard.length - 1;
+        int opponentCol = gameBoard[0].length / 2;
+        if (gameBoard[opponentRow][opponentCol] instanceof Block) {
+            ((Block) gameBoard[opponentRow][opponentCol]).setUserId(secondPlayerId); // 상대방 말은 -1
+        }
 
-        gameArea.add(player);
-        gameArea.setComponentZOrder(player, 0);
+        // 게임 초기 상태 렌더링
+        qurridorUI.renderGameArea(gameBoard);
 
-        gameArea.repaint();
+        // 턴 정보 출력
+        System.out.println(isMyTurn ? "내가 첫 번째 플레이어입니다." : "상대가 첫 번째 플레이어입니다.");
     }
 
-    // 말을 이동시키는 메서드
-    public boolean movePiece(int fromRow, int toRow, int fromCol, int toCol) {
-        // 이동 가능한지 검증
-        if (!isValidMove(fromRow,toRow,fromCol, toCol)) {
-            System.out.println("cant move there");
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (!isMyTurn) {
+            System.out.println("현재 차례가 아닙니다.");
+            return;
+        }
+
+        String direction = null;
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_UP:
+                direction = "UP";
+                break;
+            case KeyEvent.VK_DOWN:
+                direction = "DOWN";
+                break;
+            case KeyEvent.VK_LEFT:
+                direction = "LEFT";
+                break;
+            case KeyEvent.VK_RIGHT:
+                direction = "RIGHT";
+                break;
+            default:
+                return; // 다른 키는 무시
+        }
+
+        if (canMove(direction)) {
+            movePlayer(direction);
+            sendUpdatedGameBoard();
+            isMyTurn = false;
+        } else {
+            System.out.println("이동할 수 없습니다.");
+        }
+    }
+
+    private boolean canMove(String direction) {
+        int newRow = nowRow;
+        int newCol = nowCol;
+
+        switch (direction) {
+            case "UP":
+                newRow -= 2;
+                break;
+            case "DOWN":
+                newRow += 2;
+                break;
+            case "LEFT":
+                newCol -= 2;
+                break;
+            case "RIGHT":
+                newCol += 2;
+                break;
+        }
+
+        if (!isInRange(newRow, newCol)) {
+            return false; // 맵 범위 밖
+        }
+
+        if (!(gameBoard[newRow][newCol] instanceof Block)) {
+            return false; // 이동할 수 없는 위치
+        }
+
+        // 상대방 말이 있는 위치로 이동할 수 없음
+        Block targetBlock = (Block) gameBoard[newRow][newCol];
+        if (!targetBlock.getUserId().isEmpty()) {
+            System.out.println("상대방의 말이 있는 위치로 이동할 수 없습니다.");
             return false;
+        }
+
+        return true;
+    }
+
+    private void movePlayer(String direction) {
+        int newRow = nowRow;
+        int newCol = nowCol;
+
+        switch (direction) {
+            case "UP":
+                newRow -= 2;
+                break;
+            case "DOWN":
+                newRow += 2;
+                break;
+            case "LEFT":
+                newCol -= 2;
+                break;
+            case "RIGHT":
+                newCol += 2;
+                break;
         }
 
         // 이전 위치 초기화
-        placeMatrix[fromRow][fromCol] = 0;
+        if (gameBoard[nowRow][nowCol] instanceof Block) {
+            ((Block) gameBoard[nowRow][nowCol]).setUserId("");
+        }
 
-        // 새로운 위치 설정
-        placeMatrix[toRow][toCol] = 1;
+        // 새 위치 설정
+        if (gameBoard[newRow][newCol] instanceof Block) {
+            ((Block) gameBoard[nowRow][nowCol]).setUserId(userId);
+        }
 
-        // 말 UI 업데이트
-        player.setLocation(toCol * 70, toRow * 70); // 블록 + 장애물 크기 반영
-        gamePanel.repaint();
-
-        return true;
+        nowRow = newRow;
+        nowCol = newCol;
     }
 
-    // 이동 가능한지 검증하는 메서드
-    private boolean isValidMove(int fromRow, int toRow, int fromCol, int toCol) {
-        //맵 밖 체크
-        if (toRow < 0 || toRow >= rows || toCol < 0 || toCol >= cols) {
-            System.out.println("화면 밖!");
-            return false;
-        }
-
-
-        int rowDiff = toRow - fromRow;
-        int colDiff = toCol - fromCol;
-
-        // 장애물 체크
-        if (rowDiff == -1) { // 위로 이동
-            System.out.println("UP");
-            if (horizontalObstacleMatrix[toRow + 1][fromCol]) {
-                System.out.println(toRow+1+ ", "+fromCol);
-                System.out.println("위쪽 장애물!");
-                return false;
-            }
-        } else if (rowDiff == 1 ) { // 아래로 이동
-            System.out.println("DOWN");
-            if (horizontalObstacleMatrix[fromRow + 1][fromCol]) {
-                System.out.print(fromRow+1+", "+fromCol);
-                System.out.println("아래쪽 장애물!");
-                return false;
-            }
-        } else if (colDiff == -1) { // 왼쪽으로 이동
-            System.out.println("LEFT");
-            if (verticalObstacleMatrix[fromRow][toCol + 1]) {
-                System.out.println("왼쪽 장애물!");
-                return false;
-            }
-        } else if (colDiff == 1) { // 오른쪽으로 이동
-            System.out.println("RIGHT");
-            if (verticalObstacleMatrix[fromRow][fromCol + 1]) {
-                System.out.println("오른쪽 장애물!");
-                return false;
-            }
-        }
-
-        return true;
+    private void sendUpdatedGameBoard() {
+        serverConnect.sendMove(gameBoard);
     }
 
-    public void setObstacle(boolean[][] verticalObstacleMatrix, boolean[][] horizontalObstacleMatrix){
-        this.verticalObstacleMatrix = verticalObstacleMatrix;
-        this.horizontalObstacleMatrix = horizontalObstacleMatrix;
-
-        // 게임 보드의 컴포넌트들을 순회하여 Obstacle 버튼들을 찾습니다.
-        Component[] components = gameArea.getComponents();
-        for (Component comp : components) {
-            if (comp instanceof Obstacle) {
-                Obstacle obstacle = (Obstacle) comp;
-                int row = obstacle.getRow();
-                int col = obstacle.getCol();
-                boolean isVertical = obstacle.isVertical();
-                boolean isObstacleSet;
-
-                if (isVertical) {
-                    // 수직 장애물 배열에서 해당 위치의 값 가져오기
-                    isObstacleSet = verticalObstacleMatrix[row][col + 1];
-                } else {
-                    // 수평 장애물 배열에서 해당 위치의 값 가져오기
-                    isObstacleSet = horizontalObstacleMatrix[row + 1][col];
-                }
-
-                // Obstacle의 상태와 UI 업데이트
-                obstacle.setObstacle(isObstacleSet);
-                if (isObstacleSet) {
-                    obstacle.setBackground(Color.CYAN); // 장애물이 설치된 경우
-                } else {
-                    obstacle.setBackground(Color.LIGHT_GRAY); // 장애물이 없는 경우
-                }
-            }
-        }
-
-        gameArea.repaint();
+    public void updateGameBoardFromServer(GameObject[][] updatedBoard) {
+        this.gameBoard = updatedBoard;
+        qurridorUI.renderGameArea(gameBoard);
     }
 
-
-    // KeyListener 메서드 구현
-    @Override
-    public void keyPressed(KeyEvent e) {
-        System.out.println("trun : "+isMyTurn);
-        if(!isMyTurn){
-            System.out.println("not my turn!!");
-            return;
-        }
-        // 현재 위치 찾기
-        int currentRow = -1;
-        int currentCol = -1;
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (placeMatrix[i][j] == 1) {
-                    currentRow = i;
-                    currentCol = j;
-                    break;
-                }
-            }
-        }
-
-        // 방향키 입력 처리
-        switch (e.getKeyCode()) {
-            case KeyEvent.VK_UP:
-//                movePiece(currentRow,currentRow-1, currentCol,currentCol); // 위로 이동
-                serverConnect.sendMove(currentRow,currentCol, currentRow-1,currentCol);
-                break;
-            case KeyEvent.VK_DOWN:
-//                movePiece(currentRow,currentRow+1, currentCol,currentCol); // 아래로 이동
-                serverConnect.sendMove(currentRow,currentCol, currentRow+1,currentCol);
-                break;
-            case KeyEvent.VK_LEFT:
-//                movePiece(currentRow,currentRow,currentCol,currentCol-1); // 왼쪽으로 이동
-                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol-1);
-                break;
-            case KeyEvent.VK_RIGHT:
-//                movePiece(currentRow,currentRow,currentCol,currentCol+1); // 오른쪽으로 이동
-                serverConnect.sendMove(currentRow,currentCol,currentRow,currentCol+1);
-                break;
-        }
+    private boolean isInRange(int r, int c) {
+        return r >= 0 && r < gameBoard.length && c >= 0 && c < gameBoard[0].length;
     }
-    public void setMyTurn(boolean isMyTurn){
-        this.isMyTurn=isMyTurn;
+
+    public void setMyTurn(boolean isMyTurn) {
+        this.isMyTurn = isMyTurn;
     }
 }
