@@ -20,7 +20,8 @@ public class QurridorUI extends JFrame {
     private MessageQueue qurridorMessageQueue;
     private QurridorGameController qurridorGameController;
     private OpponentController opponentController;
-    private final String userId = String.valueOf((int) (Math.random() * 100));
+    private String userId = String.valueOf((int) (Math.random() * 100));
+    private String firstUserId;
     private String secondUserId;
     private String opponentId;
     private boolean isFirst = false;
@@ -268,12 +269,16 @@ public class QurridorUI extends JFrame {
 
         qurridorGameController = new QurridorGameController(gamePanel,gameArea,
                 gameBoard,serverConnect, userId,this);
-        opponentController = new OpponentController(gameArea,gameBoard,this,isFirst);
+        opponentController = new OpponentController(gameBoard,this);
 
     }
     public void renderGameArea(GameObject[][] gameBoard) {
         gameArea.removeAll();
-
+        System.out.println("ID : "+userId+", "+secondUserId);
+        if(userId.equals(secondUserId)){
+            userId=firstUserId;
+        }
+        System.out.println("ID : "+userId+", "+secondUserId);
         int blockSize = 60;
         int obstacleSize = 10;
 
@@ -284,15 +289,15 @@ public class QurridorUI extends JFrame {
                     Block block = (Block) obj;
                     JLabel blockLabel = new JLabel();
                     blockLabel.setOpaque(true);
-                    if(block.getUserId().equals(userId)){
-                        blockLabel.setBackground(Color.GREEN);
+
+                    if (block.getUserId().equals(userId)) {
+                        blockLabel.setBackground(Color.GREEN); // 내 말
+                    } else if (block.getUserId().equals(secondUserId)) {
+                        blockLabel.setBackground(Color.RED); // 상대방 말
+                    } else if (block.getUserId().isEmpty()) {
+                        blockLabel.setBackground(Color.WHITE); // 빈 블록
                     }
-                    else if(block.getUserId().equals(secondUserId)){
-                        blockLabel.setBackground(Color.RED);
-                    }
-                    else if(block.getUserId().isEmpty()){
-                        blockLabel.setBackground(Color.WHITE);
-                    }
+
                     blockLabel.setBounds(c / 2 * (blockSize + obstacleSize), r / 2 * (blockSize + obstacleSize), blockSize, blockSize);
                     gameArea.add(blockLabel);
                 } else if (obj instanceof Obstacle) {
@@ -312,6 +317,7 @@ public class QurridorUI extends JFrame {
         gameArea.revalidate();
         gameArea.repaint();
     }
+
 
     private class ProcessMessage extends Thread{
         QurridorUI qurridorUI;
@@ -345,35 +351,33 @@ public class QurridorUI extends JFrame {
                             break;
                         case FIRST_MODE:
                             String message = serverMsg.getMessage();
-                            System.out.println("ID : "+message);
+//                            System.out.println("ID : "+message);
                             String[] ids = message.split(",");
 
-                            String firstPlayerId = ids[0].trim();
-                            String secondPlayerId = ids[1].trim();
-                            System.out.println(firstPlayerId);
-                            System.out.println(secondPlayerId);
-                            secondUserId=secondPlayerId;
-                            if(userId.equals(firstPlayerId)){
+                            firstUserId = ids[0].trim();
+                            secondUserId = ids[1].trim();
+                            if(userId.equals(firstUserId)){
                                 isFirst = true;
                                 chatArea.append("선턴입니다.");
-                                qurridorGameController.startGame(true,userId,secondPlayerId); // 첫 번째 플레이어로 게임 시작
+                                qurridorGameController.startGame(true,userId,secondUserId); // 첫 번째 플레이어로 게임 시작
+                                opponentController.initOpponent(secondUserId, false); // 상대방 초기화
+
                             }
-                            else if(userId.equals(secondPlayerId)){
+                            else if(userId.equals(secondUserId)){
                                 chatArea.append("상대가 선턴입니다.");
-                                qurridorGameController.startGame(false,firstPlayerId,userId); // 두 번째 플레이어로 게임 시작
+                                qurridorGameController.startGame(false,firstUserId,userId); // 두 번째 플레이어로 게임 시작
+                                opponentController.initOpponent(firstUserId, true); // 상대방 초기화
                             }
                             break;
                         case PLAY_MODE:
-                            System.out.println("userID : "+userId);
                             if(id.equals(userId)) {
                                 gameBoard = serverMsg.getGameBoard();
                                 qurridorGameController.updateGameBoardFromServer(gameBoard);
-
                                 qurridorGameController.setMyTurn(false);
                             }
                             else{
                                 gameBoard= serverMsg.getGameBoard();
-                                opponentController.updateGameBoardFromServer(gameBoard);
+                                qurridorGameController.updateGameBoardFromServer(gameBoard);
                                 qurridorGameController.setMyTurn(true);
                             }
                             break;
