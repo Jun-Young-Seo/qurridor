@@ -89,16 +89,7 @@ public class QurridorServer {
                 PlayerHandler playerHandler = new PlayerHandler(clientSocket);
                 playerConnects.add(playerHandler);
                 playerHandler.start();
-                //선 턴 정하기
-                //딱 한번만 실행되면 됨
-                if(playerConnects.size()==2 && !assignFirst){
-                    assignFirst=true;
-                    QurridorMsg assignFirstMsg = new QurridorMsg();
-                    assignFirstMsg.setNowMode(QurridorMsg.mode.FIRST_MODE);
-                    assignFirstMsg.setMessage(playerConnects.get(0).getUserId());
-                    System.out.println(assignFirstMsg.toString());
-                    broadCast(assignFirstMsg);
-                }
+
             }
         } catch (IOException e) {
             System.out.println(e);
@@ -136,6 +127,7 @@ public class QurridorServer {
         ObjectInputStream objectInputStream;
         ObjectOutputStream objectOutputStream;
         private QurridorMsg qurridorMsg;
+        private GameObject [][] gameBoard;
 
         public PlayerHandler(Socket clientSocket) {
             System.out.println("new PlayerHandler");
@@ -170,13 +162,33 @@ public class QurridorServer {
                             printDisplay("클라이언트가 연결되었습니다. : " + clientSocket.getInetAddress());
                             printDisplay("새 참가자 : " + userId);
                             printDisplay("현재 참가자 수 : " + playerConnects.size());
-                            //chatMsg를 재사용하는 경우 오류가 발생할 가능성이 있어 새로운 객체를 만들어 사용
+
+                            // 새로운 참가자 알림
                             QurridorMsg loginMsg = new QurridorMsg();
                             loginMsg.setMessage("새 참가자 : " + userId);
                             loginMsg.setUserId(userId);
                             loginMsg.setNowMode(QurridorMsg.mode.LOGIN_MODE);
                             broadCast(loginMsg);
+
+                            // 두 명의 클라이언트가 로그인했을 때 선턴 메시지 전송
+                            if (playerConnects.size() == 2 && !assignFirst) {
+                                // 모든 플레이어의 ID가 초기화되었는지 확인
+                                String firstId = playerConnects.get(0).getUserId();
+                                String secondId = playerConnects.get(1).getUserId();
+
+                                if (firstId != null && secondId != null) {
+                                    assignFirst = true;
+
+                                    QurridorMsg assignFirstMsg = new QurridorMsg();
+                                    assignFirstMsg.setNowMode(QurridorMsg.mode.FIRST_MODE);
+                                    assignFirstMsg.setMessage(firstId + "," + secondId);
+                                    System.out.println(assignFirstMsg.getMessage());
+                                    broadCast(assignFirstMsg);
+                                }
+                            }
                             break;
+//                        case START_MODE:
+//                            gameBoard = new GameObject[9][9];
                         //채팅 모드
                         case CHATTING_MODE:
                             QurridorMsg chattingMsg = new QurridorMsg();
@@ -187,18 +199,19 @@ public class QurridorServer {
                             broadCast(chattingMsg);
                             break;
                         case PLAY_MODE:
+                            gameBoard = qurridorMsg.getGameBoard();
+
                             QurridorMsg gameMsg = new QurridorMsg();
                             gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
                             gameMsg.setUserId(userId);
-                            gameMsg.setMoveData(qurridorMsg.getMoveData());
+                            gameMsg.setGameBoard(gameBoard);
                             broadCast(gameMsg);
                             break;
                         case OBSTACLE_MODE:
                             QurridorMsg obstacleMsg = new QurridorMsg();
                             obstacleMsg.setNowMode(QurridorMsg.mode.OBSTACLE_MODE);
                             obstacleMsg.setUserId(userId);
-                            obstacleMsg.setHorizontalObstacleMatrix(qurridorMsg.getHorizontalObstacleMatrix());
-                            obstacleMsg.setVerticalObstacleMatrix(qurridorMsg.getVerticalObstacleMatrix());
+                            obstacleMsg.setGameBoard(qurridorMsg.getGameBoard());
                             broadCast(obstacleMsg);
                     }
                 }
