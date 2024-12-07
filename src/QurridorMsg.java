@@ -63,4 +63,22 @@ public class QurridorMsg implements Serializable {
     public String toString() {
         return "mode : " + nowMode.name() + " msg : " + message;
     }
+    public void gameBoardToString(GameObject[][] gameBoard) {
+        for (int i = 0; i < gameBoard.length; i++) {
+            for (int n = 0; n < gameBoard[0].length; n++) {
+                GameObject obj = gameBoard[i][n];
+                if (obj instanceof Block) {
+                    Block block = (Block) obj;
+                    String userId = block.getUserId();
+                    System.out.print((userId != null && !userId.isEmpty()) ? userId : "X");
+                } else {
+                    System.out.print(""); // Block이 아닌 경우 빈 칸으로 처리
+                }
+                System.out.print(" "); // 칸 간격
+            }
+            System.out.println(); // 행 구분
+        }
+        System.out.println(); // 출력 후 한 줄 공백
+    }
+
 }
