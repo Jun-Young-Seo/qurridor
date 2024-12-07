@@ -34,9 +34,9 @@ public class QurridorGameController extends KeyAdapter {
     }
 
     // 게임 시작 메서드
-    public void startGame(boolean isFirst, String firstPlayerId, String secondPlayerId) {
+    public void startGame(boolean isFirst, String firstPlayerId, String secondPlayerId, GameObject[][] gameBoard) {
         this.isMyTurn = isFirst;
-
+        this.gameBoard=gameBoard;
         // 플레이어의 시작 위치 설정
         if (isFirst) {
             nowRow = gameBoard.length - 1; // 맨 아래
@@ -44,21 +44,6 @@ public class QurridorGameController extends KeyAdapter {
             nowRow = 0; // 맨 위
         }
         nowCol = gameBoard[0].length / 2; // 중앙
-
-        // 내 말 초기 상태 설정
-        if (gameBoard[nowRow][nowCol] instanceof Block) {
-            ((Block) gameBoard[nowRow][nowCol]).setUserId(firstPlayerId); // 내 ID 설정
-        }
-
-        // 상대방 말 초기 상태 설정
-        int opponentRow = isFirst ? 0 : gameBoard.length - 1;
-        int opponentCol = gameBoard[0].length / 2;
-        if (gameBoard[opponentRow][opponentCol] instanceof Block) {
-            ((Block) gameBoard[opponentRow][opponentCol]).setUserId(secondPlayerId); // 상대방 ID 설정
-        }
-
-        // 게임 초기 상태 렌더링
-        qurridorUI.renderGameArea(gameBoard);
 
         // 턴 정보 출력
         if (isMyTurn) {
@@ -70,6 +55,7 @@ public class QurridorGameController extends KeyAdapter {
 
     @Override
     public void keyPressed(KeyEvent e) {
+
         if (!isMyTurn) {
             System.out.println("현재 차례가 아닙니다.");
             return;
@@ -77,6 +63,9 @@ public class QurridorGameController extends KeyAdapter {
 
         String direction = null;
         int keyCode = e.getKeyCode();
+        System.out.println(keyCode);
+        QurridorMsg qurridorMsg = new QurridorMsg();
+        qurridorMsg.gameBoardToString(gameBoard);
 
         if (keyCode == KeyEvent.VK_UP) {
             direction = "UP";
@@ -112,10 +101,12 @@ public class QurridorGameController extends KeyAdapter {
         }
 
         if (!isInRange(newRow, newCol)) {
+            System.out.println("맵 범위 밖임");
             return false; // 맵 범위를 벗어남
         }
 
         if (!(gameBoard[newRow][newCol] instanceof Block)) {
+            System.out.println("가려는 곳이 블록이 아님");
             return false; // 유효하지 않은 위치
         }
 
@@ -130,6 +121,7 @@ public class QurridorGameController extends KeyAdapter {
     }
 
     private void movePlayer(String direction) {
+        System.out.println("game Controller Called");
         int newRow = nowRow;
         int newCol = nowCol;
 
@@ -163,6 +155,9 @@ public class QurridorGameController extends KeyAdapter {
 
     public void updateGameBoardFromServer(GameObject[][] updatedBoard) {
         this.gameBoard = updatedBoard;
+        System.out.println("updated from server");
+        QurridorMsg qurridorMsg = new QurridorMsg();
+//        qurridorMsg.gameBoardToString(gameBoard);
         qurridorUI.renderGameArea(gameBoard);
     }
 
@@ -172,5 +167,12 @@ public class QurridorGameController extends KeyAdapter {
 
     public void setMyTurn(boolean isMyTurn) {
         this.isMyTurn = isMyTurn;
+    }
+    public void setUserId(String userId){
+        this.userId=userId;
+    }
+
+    public void setGameBoard(GameObject[][] gameBoard) {
+        this.gameBoard = gameBoard;
     }
 }

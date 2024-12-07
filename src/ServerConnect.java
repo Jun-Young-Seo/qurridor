@@ -64,10 +64,12 @@ public class ServerConnect {
     }
 
     public void sendMove(GameObject [][] gameBoard){
+        System.out.println("From client");
         QurridorMsg gameMsg = new QurridorMsg();
         gameMsg.setUserId(userId);
         gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
         gameMsg.setGameBoard(gameBoard);
+        gameMsg.gameBoardToString(gameBoard);
         try{
             out.writeObject(gameMsg);
             out.flush();
