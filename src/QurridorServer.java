@@ -84,7 +84,6 @@ public class QurridorServer {
             while (true) {
                 //accept해서 클라이언트 소켓 생성
                 clientSocket = serverSocket.accept();
-                System.out.println("new connect"+clientSocket);
                 //소켓을 인자로 클라이언트별 핸들러 스레드를 생성
                 PlayerHandler playerHandler = new PlayerHandler(clientSocket);
                 playerConnects.add(playerHandler);
@@ -130,16 +129,13 @@ public class QurridorServer {
         private GameObject [][] gameBoard;
 
         public PlayerHandler(Socket clientSocket) {
-            System.out.println("new PlayerHandler");
             this.clientSocket = clientSocket;
             try {
                 out = clientSocket.getOutputStream();
                 objectOutputStream = new ObjectOutputStream(new BufferedOutputStream(out));
                 objectOutputStream.flush();
-                System.out.println(objectOutputStream);
                 in = clientSocket.getInputStream();
                 objectInputStream = new ObjectInputStream(new BufferedInputStream(in));
-                System.out.println(objectInputStream);
             } catch (IOException e) {
                 System.out.println(e);
             }
@@ -182,7 +178,6 @@ public class QurridorServer {
                                     QurridorMsg assignFirstMsg = new QurridorMsg();
                                     assignFirstMsg.setNowMode(QurridorMsg.mode.FIRST_MODE);
                                     assignFirstMsg.setMessage(firstId + "," + secondId);
-                                    System.out.println(assignFirstMsg.getMessage());
                                     broadCast(assignFirstMsg);
                                 }
                             }
@@ -200,7 +195,6 @@ public class QurridorServer {
                             break;
                         case PLAY_MODE:
                             gameBoard = qurridorMsg.getGameBoard();
-                            qurridorMsg.gameBoardToString(gameBoard);
                             QurridorMsg gameMsg = new QurridorMsg();
                             gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
                             gameMsg.setUserId(userId);
@@ -208,10 +202,12 @@ public class QurridorServer {
                             broadCast(gameMsg);
                             break;
                         case OBSTACLE_MODE:
+                            gameBoard = qurridorMsg.getGameBoard();
+                            qurridorMsg.gameBoardObstacleToString(gameBoard);
                             QurridorMsg obstacleMsg = new QurridorMsg();
                             obstacleMsg.setNowMode(QurridorMsg.mode.OBSTACLE_MODE);
                             obstacleMsg.setUserId(userId);
-                            obstacleMsg.setGameBoard(qurridorMsg.getGameBoard());
+                            obstacleMsg.setGameBoard(gameBoard);
                             broadCast(obstacleMsg);
                     }
                 }
