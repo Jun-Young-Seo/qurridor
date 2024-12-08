@@ -204,7 +204,7 @@ public class QurridorUI extends JFrame {
         int totalWidth = (howManyCols * blockWidth) + ((howManyCols - 1) * roadWidth);
         int totalHeight = (howManyRows * blockHeight) + ((howManyRows - 1) * roadHeight);
 
-        obstacleActionListener= new ObstacleActionListener(gameBoard,serverConnect);
+        obstacleActionListener= new ObstacleActionListener(gameBoard,serverConnect,userId);
 
         gameArea.setSize(totalWidth, totalHeight);
         gameArea.setBackground(Color.WHITE);
@@ -226,7 +226,7 @@ public class QurridorUI extends JFrame {
                     // 짝수행, 홀수열 -> 수직 장애물
                     Obstacle verticalObstacle = new Obstacle(r,c,true);
 
-                    JButton verticalObstacleButton = new JButton();
+                    ObstacleButton verticalObstacleButton = new ObstacleButton(r,c,true);
                     verticalObstacleButton.setOpaque(true);
                     verticalObstacleButton.setBackground(Color.RED);
                     int x = (c / 2) * (blockWidth + roadWidth) + blockWidth;
@@ -239,7 +239,7 @@ public class QurridorUI extends JFrame {
                     // 홀수행, 짝수열 -> 수평 장애물
                     Obstacle horizontalObstacle = new Obstacle(r,c,false);
 
-                    JButton horizontalObstacleButton = new JButton();
+                    ObstacleButton horizontalObstacleButton = new ObstacleButton(r,c,false);
                     horizontalObstacleButton.setOpaque(true);
                     horizontalObstacleButton.setBackground(Color.CYAN);
                     int x = (c / 2) * (blockWidth + roadWidth);
@@ -260,17 +260,12 @@ public class QurridorUI extends JFrame {
         int bottomRow = gameBoard.length - 1; // 맨 아래
         int centerCol = gameBoard[0].length / 2; // 중앙
         int topRow = 0; //맨위
-        System.out.println(firstUserId);
-        System.out.println(secondUserId);
         if (gameBoard[bottomRow][centerCol] instanceof Block) {
             ((Block) gameBoard[bottomRow][centerCol]).setUserId(firstUserId);
         }
         if(gameBoard[topRow][centerCol] instanceof Block){
             ((Block) gameBoard[topRow][centerCol]).setUserId(secondUserId);
-        }
-        QurridorMsg qurridorMsg = new QurridorMsg();
-        qurridorMsg.gameBoardToString(gameBoard);
-        renderGameArea(gameBoard);
+        }        renderGameArea(gameBoard);
     }
     public void renderGameArea(GameObject[][] gameBoard) {
         gameArea.removeAll();
@@ -295,11 +290,13 @@ public class QurridorUI extends JFrame {
 
                     blockLabel.setBounds(c / 2 * (blockSize + obstacleSize), r / 2 * (blockSize + obstacleSize), blockSize, blockSize);
                     gameArea.add(blockLabel);
-                } else if (obj instanceof Obstacle) {
+                }
+                else if (obj instanceof Obstacle) {
                     Obstacle obstacle = (Obstacle) obj;
-                    JButton obstacleButton = new JButton();
-                    obstacleButton.setBackground(obstacle.isObstacle() ? Color.RED : Color.LIGHT_GRAY);
-                    if (obstacle.isVertical()) {
+                    ObstacleButton obstacleButton = new ObstacleButton(obstacle.getRow(), obstacle.getCol(), obstacle.getIsVertical());
+                    obstacleButton.setBackground(obstacle.getIsObstacle() ? Color.RED : Color.LIGHT_GRAY);
+                    obstacleButton.addActionListener(obstacleActionListener);
+                    if (obstacle.getIsVertical()) {
                         obstacleButton.setBounds(c / 2 * (blockSize + obstacleSize) + blockSize, r / 2 * (blockSize + obstacleSize), obstacleSize, blockSize);
                     } else {
                         obstacleButton.setBounds(c / 2 * (blockSize + obstacleSize), r / 2 * (blockSize + obstacleSize) + blockSize, blockSize, obstacleSize);
@@ -324,7 +321,7 @@ public class QurridorUI extends JFrame {
             while (true) {
                 while (!qurridorMessageQueue.isEmpty()) {
                     QurridorMsg serverMsg = qurridorMessageQueue.dequeueMessage();
-                    System.out.println("my User Id qurridorUI : "+userId);
+                    System.out.println(serverMsg.getNowMode());
                     String id = serverMsg.getUserId();
                     switch (serverMsg.getNowMode()) {
                         case LOGIN_MODE:
@@ -346,8 +343,6 @@ public class QurridorUI extends JFrame {
                             }
                             break;
                         case FIRST_MODE:
-                            System.out.println("FIRST");
-//                            serverMsg.gameBoardToString(gameBoard);
                             String message = serverMsg.getMessage();
                             String[] ids = message.split(",");
 
@@ -367,35 +362,22 @@ public class QurridorUI extends JFrame {
                             startGame(gameBoard);
                             serverConnect.sendMove(gameBoard);
                             break;
-                        case PLAY_MODE:
-                            System.out.println("PLAY");
-//                            serverMsg.gameBoardToString(gameBoard);
+                        case PLAY_MODE, OBSTACLE_MODE:
                             if(id.equals(userId)) {
                                 gameBoard = serverMsg.getGameBoard();
                                 qurridorGameController.updateGameBoardFromServer(gameBoard);
                                 opponentController.setGameBoard(gameBoard);
                                 qurridorGameController.setMyTurn(false);
+                                obstacleActionListener.setGameBoard(gameBoard);
                             }
                             else{
                                 gameBoard= serverMsg.getGameBoard();
                                 opponentController.updateGameBoardFromServer(gameBoard);
                                 qurridorGameController.setGameBoard(gameBoard);
                                 qurridorGameController.setMyTurn(true);
+                                obstacleActionListener.setGameBoard(gameBoard);
                             }
                             break;
-                        case OBSTACLE_MODE:
-                            if(id.equals(userId)){
-                                System.out.println("ME");
-//                                qurridorGameController.setObstacle(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
-//                                opponentController.updateMatrix(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
-//                                qurridorGameController.setMyTurn(false);
-                            }
-                            else{
-                                System.out.println("ENEMY");
-//                                opponentController.setOpponentObstacles(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
-//                                qurridorGameController.updateMatrix(serverMsg.getVerticalObstacleMatrix(),serverMsg.getHorizontalObstacleMatrix());
-//                                qurridorGameController.setMyTurn(true);
-                            }
                     }
                 }
             }

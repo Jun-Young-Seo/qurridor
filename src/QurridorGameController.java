@@ -47,9 +47,9 @@ public class QurridorGameController extends KeyAdapter {
 
         // 턴 정보 출력
         if (isMyTurn) {
-            System.out.println("내가 첫 번째 플레이어입니다.");
+//            System.out.println("내가 첫 번째 플레이어입니다.");
         } else {
-            System.out.println("상대가 첫 번째 플레이어입니다.");
+//            System.out.println("상대가 첫 번째 플레이어입니다.");
         }
     }
 
@@ -63,10 +63,6 @@ public class QurridorGameController extends KeyAdapter {
 
         String direction = null;
         int keyCode = e.getKeyCode();
-        System.out.println(keyCode);
-        QurridorMsg qurridorMsg = new QurridorMsg();
-        qurridorMsg.gameBoardToString(gameBoard);
-
         if (keyCode == KeyEvent.VK_UP) {
             direction = "UP";
         } else if (keyCode == KeyEvent.VK_DOWN) {
@@ -121,7 +117,7 @@ public class QurridorGameController extends KeyAdapter {
     }
 
     private void movePlayer(String direction) {
-        System.out.println("game Controller Called");
+
         int newRow = nowRow;
         int newCol = nowCol;
 
@@ -155,9 +151,6 @@ public class QurridorGameController extends KeyAdapter {
 
     public void updateGameBoardFromServer(GameObject[][] updatedBoard) {
         this.gameBoard = updatedBoard;
-        System.out.println("updated from server");
-        QurridorMsg qurridorMsg = new QurridorMsg();
-//        qurridorMsg.gameBoardToString(gameBoard);
         qurridorUI.renderGameArea(gameBoard);
     }
 

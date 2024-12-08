@@ -5,24 +5,39 @@ import java.awt.event.ActionListener;
 public class ObstacleActionListener implements ActionListener {
     private GameObject[][] gameBoard;
     private ServerConnect serverConnect;
-    public ObstacleActionListener(GameObject[][] gameBoard, ServerConnect serverConnect) {
-        this.gameBoard=gameBoard;
-        this.serverConnect=serverConnect;
+    private String userId;
+    public ObstacleActionListener(GameObject[][] gameBoard, ServerConnect serverConnect, String userId) {
+        this.gameBoard = gameBoard;
+        this.serverConnect = serverConnect;
+        this.userId=userId;
+        System.out.println("my user Id : "+userId);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        Obstacle clickedObstacle = (Obstacle) e.getSource();
+        System.out.println("click");
+        ObstacleButton clickedObstacleBtn = (ObstacleButton) e.getSource();
 
-        if (clickedObstacle.isObstacle()) {
-            System.out.println("이미 장애물");
-            return;
+        int row = clickedObstacleBtn.getRow();
+        int col = clickedObstacleBtn.getCol();
+        System.out.println(row+" , "+col);
+        if (gameBoard[row][col] instanceof Obstacle) {
+            Obstacle obstacle = (Obstacle) gameBoard[row][col];
+            System.out.println(obstacle.getIsVertical()?"V":"H");
+            // 이미 장애물이 설정된 경우 처리
+            if (obstacle.getIsObstacle()) {
+                System.out.println("이미 장애물이 배치된 위치입니다.");
+                return;
+            }
+            System.out.println(userId);
+            obstacle.setObstacle(true);
+
         }
-
-        int row = clickedObstacle.getRow();
-        int col = clickedObstacle.getCol();
-
-        clickedObstacle.setObstacle(true);
         serverConnect.sendObstacle(gameBoard);
+
+    }
+
+    public void setGameBoard(GameObject[][] gameBoard) {
+        this.gameBoard = gameBoard;
     }
 }

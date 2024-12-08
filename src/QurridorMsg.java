@@ -10,7 +10,7 @@ public class QurridorMsg implements Serializable {
     private String message;
     private String fileName;
     private byte[] fileData;//파일 데이터를 담을 배열 --> 1k 버퍼처럼 사용
-
+    public boolean isMsg;
     public mode getNowMode() {
         return nowMode;
     }
@@ -72,13 +72,35 @@ public class QurridorMsg implements Serializable {
                     String userId = block.getUserId();
                     System.out.print((userId != null && !userId.isEmpty()) ? userId : "X");
                 } else {
-                    System.out.print(""); // Block이 아닌 경우 빈 칸으로 처리
+                    System.out.print("");
+                }
+                System.out.print(" ");
+            }
+            System.out.println();
+        }
+        System.out.println();
+    }
+    public void gameBoardObstacleToString(GameObject[][] gameBoard) {
+        for (int i = 0; i < gameBoard.length; i++) {
+            for (int n = 0; n < gameBoard[i].length; n++) {
+                GameObject obj = gameBoard[i][n];
+                if (obj instanceof Obstacle) {
+                    Obstacle obstacle = (Obstacle) obj;
+                    if (obstacle.getIsObstacle()) {
+                        // 수직(V) 또는 수평(H) 출력
+                        System.out.print(obstacle.getIsVertical() ? "V" : "H");
+                    } else {
+                        System.out.print("X"); // 장애물 없음 표시
+                    }
+                } else {
+                    System.out.print(" "); // Obstacle이 아닌 경우
                 }
                 System.out.print(" "); // 칸 간격
             }
-            System.out.println(); // 행 구분
+            System.out.println(); // 줄 바꿈
         }
-        System.out.println(); // 출력 후 한 줄 공백
+        System.out.println(); // 행 출력 후 공백
     }
+
 
 }

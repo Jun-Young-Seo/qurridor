@@ -40,7 +40,6 @@ public class ServerConnect {
         QurridorMsg loginMsg = new QurridorMsg();
         loginMsg.setNowMode(QurridorMsg.mode.LOGIN_MODE);
         loginMsg.setUserId(userId);
-        System.out.println("set Id : "+userId);
         try {
             out.writeObject(loginMsg);
             out.flush();
@@ -64,12 +63,10 @@ public class ServerConnect {
     }
 
     public void sendMove(GameObject [][] gameBoard){
-        System.out.println("From client");
         QurridorMsg gameMsg = new QurridorMsg();
         gameMsg.setUserId(userId);
         gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
         gameMsg.setGameBoard(gameBoard);
-        gameMsg.gameBoardToString(gameBoard);
         try{
             out.writeObject(gameMsg);
             out.flush();
@@ -82,6 +79,7 @@ public class ServerConnect {
         obstacleMsg.setUserId(userId);
         obstacleMsg.setNowMode(QurridorMsg.mode.OBSTACLE_MODE);
         obstacleMsg.setGameBoard(gameBoard);
+        obstacleMsg.isMsg=true;
         try{
             out.writeObject(obstacleMsg);
             out.flush();
