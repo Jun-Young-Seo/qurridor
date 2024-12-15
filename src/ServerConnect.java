@@ -48,6 +48,7 @@ public class ServerConnect {
             e.printStackTrace();
         }
     }
+
     public void sendChatting(String chat){
         QurridorMsg chatMsg = new QurridorMsg();
         chatMsg.setNowMode(QurridorMsg.mode.CHATTING_MODE);
@@ -86,6 +87,32 @@ public class ServerConnect {
         }
         catch(IOException e){
             System.out.println("obstacle send err");
+            e.printStackTrace();
+        }
+    }
+
+    public void sendWin(String userId){
+        QurridorMsg winMsg = new QurridorMsg();
+        winMsg.setUserId(userId);
+        winMsg.setNowMode(QurridorMsg.mode.WIN_MODE);
+        try{
+            out.writeObject(winMsg);
+            out.flush();
+        }catch (IOException e){
+            System.out.println("Win msg send err");
+            e.printStackTrace();
+        }
+    }
+    public void requestMap(String fileName){
+        QurridorMsg mapSettingMsg = new QurridorMsg();
+        mapSettingMsg.setNowMode(QurridorMsg.mode.XML_MODE);
+        System.out.println(fileName);
+        mapSettingMsg.setMessage(fileName);
+        try{
+            out.writeObject(mapSettingMsg);
+            out.flush();
+        }catch (IOException e){
+            System.out.println("request map err");
             e.printStackTrace();
         }
     }

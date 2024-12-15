@@ -6,6 +6,7 @@ public class OpponentController {
     public OpponentController(GameObject[][] gameBoard, QurridorUI qurridorUI) {
         this.gameBoard = gameBoard;
         this.qurridorUI = qurridorUI;
+        System.out.println("Opponent controller okay");
     }
 
     public void updateGameBoardFromServer(GameObject[][] updatedBoard) {

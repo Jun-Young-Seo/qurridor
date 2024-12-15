@@ -1,0 +1,4 @@
+<GameConfig>
+    <Setting HowManyRows="5" HowManyCols="5"/>
+    <Size Width="1024" Height="768"/>
+</GameConfig>

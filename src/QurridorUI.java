@@ -6,16 +6,20 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class QurridorUI extends JFrame {
     private JPanel gamePanel;
-    private JPanel userInfoPanel;
+    private JPanel mapInfoPanel;
     private JPanel chatPanel;
     private JTextArea chatArea;
     private Container contentPane;
     private JPanel gameArea;
-    private int howManyRows;
-    private int howManyCols;
+    private int howManyRows=1;
+    private int howManyCols=1;
     private GameObject[][] gameBoard;
     private MessageQueue qurridorMessageQueue;
     private QurridorGameController qurridorGameController;
@@ -27,9 +31,10 @@ public class QurridorUI extends JFrame {
     private boolean isFirst = false;
     ServerConnect serverConnect;
     private ObstacleActionListener obstacleActionListener;
+    private ErrorDisplay errorDisplay;
     public QurridorUI() {
         qurridorMessageQueue = new MessageQueue();
-
+        errorDisplay=new ErrorDisplay();
         setTitle("Quoridor Game");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1630, 940); // 전체 프레임 크기 설정
@@ -37,9 +42,10 @@ public class QurridorUI extends JFrame {
         splitPanel();
         setVisible(true);
     }
-
+    public void showError(){
+        errorDisplay.showError();
+    }
     private void splitPanel() {
-        xmlParsing();
         setLayout(new BorderLayout());
 
         // JSplitPane을 생성하여 좌우 분할
@@ -69,17 +75,14 @@ public class QurridorUI extends JFrame {
         bottomStatusBar.add(bottomStatusLabel);
 
         serverConnect = new ServerConnect(userId, this, qurridorMessageQueue);
+
         // 게임 영역 설정 및 정중앙 배치
-        setGameArea();
-        int centerX = (gamePanel.getWidth() - gameArea.getWidth()) / 2;
-        int centerY = (gamePanel.getHeight() - gameArea.getHeight()) / 2;
-        gameArea.setLocation(centerX, centerY);
 
         // 게임 패널에 추가
         gamePanel.add(topStatusBar);
-        gamePanel.add(gameArea);
         gamePanel.add(bottomStatusBar);
-
+        gamePanel.add(errorDisplay);
+        gamePanel.setComponentZOrder(errorDisplay,0);
         hSplitPane.setLeftComponent(gamePanel);
 
         // 오른쪽 접속자 정보 및 채팅창
@@ -87,12 +90,20 @@ public class QurridorUI extends JFrame {
         rightPanel.setLayout(null);
 
         // 접속자 정보 패널
-        userInfoPanel = new JPanel();
-        userInfoPanel.setBackground(Color.CYAN);
-        userInfoPanel.setSize(400, 450);
-        userInfoPanel.setLocation(0, 0);
-        JLabel userInfoLabel = new JLabel("접속자 정보", SwingConstants.CENTER);
-        userInfoPanel.add(userInfoLabel);
+        mapInfoPanel = new JPanel();
+        mapInfoPanel.setBackground(Color.CYAN);
+        mapInfoPanel.setSize(400, 450);
+        mapInfoPanel.setLocation(0, 0);
+        JLabel userInfoLabel = new JLabel("맵 목록", SwingConstants.CENTER);
+        mapInfoPanel.add(userInfoLabel);
+        JButton map1Button = new JButton("map1");
+        mapInfoPanel.add(map1Button);
+        map1Button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                serverConnect.requestMap("d.xml");
+            }
+        });
         // 채팅창 패널
         chatPanel = new JPanel();
         chatPanel.setBackground(Color.PINK);
@@ -139,7 +150,7 @@ public class QurridorUI extends JFrame {
         buttonPanel.add(mapSettingButton);
         buttonPanel.add(exitButton);
 
-        rightPanel.add(userInfoPanel);
+        rightPanel.add(mapInfoPanel);
         rightPanel.add(chatPanel);
         rightPanel.add(buttonPanel);
 
@@ -163,6 +174,12 @@ public class QurridorUI extends JFrame {
                 serverConnect.sendChatting(chat);
             }
         });
+        exitButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                System.exit(1);
+            }
+        });
         chatInput.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -170,22 +187,26 @@ public class QurridorUI extends JFrame {
             }
         });
 
+
+
+    }
+
+    private void xmlParsing(String xmlFile) {
+        XMLReader xmlReader = new XMLReader(xmlFile);
+        Node settingNode = xmlReader.getSettingElement();
+        howManyRows = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYROWS));
+        howManyCols = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYCOLS));
+        setGameArea();
+        int centerX = (gamePanel.getWidth() - gameArea.getWidth()) / 2;
+        int centerY = (gamePanel.getHeight() - gameArea.getHeight()) / 2;
+        gameArea.setLocation(centerX, centerY);
+        gamePanel.add(gameArea);
         gameArea.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 gameArea.requestFocus();
             }
         });
-
-    }
-
-    private void xmlParsing() {
-        String xmlFile = "./d.xml";
-        XMLReader xmlReader = new XMLReader(xmlFile);
-        Node settingNode = xmlReader.getSettingElement();
-        howManyRows = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYROWS));
-        howManyCols = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYCOLS));
-
     }
 
     public void setGameArea() {
@@ -254,7 +275,7 @@ public class QurridorUI extends JFrame {
         qurridorGameController = new QurridorGameController(gamePanel,gameArea,
                 gameBoard,serverConnect, userId,this);
         opponentController = new OpponentController(gameBoard,this);
-
+        startGame(gameBoard);
     }
     public void startGame(GameObject[][] gameBoard){
         int bottomRow = gameBoard.length - 1; // 맨 아래
@@ -265,7 +286,9 @@ public class QurridorUI extends JFrame {
         }
         if(gameBoard[topRow][centerCol] instanceof Block){
             ((Block) gameBoard[topRow][centerCol]).setUserId(secondUserId);
-        }        renderGameArea(gameBoard);
+        }
+        System.out.println(firstUserId+", "+secondUserId);
+        renderGameArea(gameBoard);
     }
     public void renderGameArea(GameObject[][] gameBoard) {
         gameArea.removeAll();
@@ -281,10 +304,13 @@ public class QurridorUI extends JFrame {
                     blockLabel.setOpaque(true);
 
                     if (block.getUserId().equals(firstUserId)) {
+                        System.out.println(firstUserId);
                         blockLabel.setBackground(Color.GREEN); // 내 말
                     } else if (block.getUserId().equals(secondUserId)) {
+                        System.out.println(secondUserId);
                         blockLabel.setBackground(Color.RED); // 상대방 말
                     } else if (block.getUserId().isEmpty()) {
+                        System.out.println("EMPTY");
                         blockLabel.setBackground(Color.WHITE); // 빈 블록
                     }
 
@@ -332,6 +358,40 @@ public class QurridorUI extends JFrame {
                             break;
                         case LOGOUT_MODE:
                             break;
+                        case XML_MODE:
+                            String message = serverMsg.getMessage();
+                            String[] ids = message.split(",");
+                            firstUserId = ids[0];
+                            secondUserId = ids[1];
+                            File xmlFile = new File("./client_files/"+serverMsg.getFileName());
+                            try {
+                                FileOutputStream fos = new FileOutputStream(xmlFile);
+                                fos.write(serverMsg.getFileData());
+                                while(!qurridorMessageQueue.isEmpty()){
+                                    QurridorMsg fileMsg = qurridorMessageQueue.dequeueMessage();
+                                    if(fileMsg.getMessage().equals("EOF")){
+                                        break;
+                                    }
+                                    fos.write(fileMsg.getFileData());
+                                }
+                                xmlParsing(xmlFile.getPath());
+
+                                if(userId.equals(firstUserId)){
+                                    isFirst = true;
+                                    chatArea.append("선턴입니다.");
+                                    qurridorGameController.startGame(true,userId,secondUserId,gameBoard); // 첫 번째 플레이어로 게임 시작
+                                }
+                                else if(userId.equals(secondUserId)){
+                                    chatArea.append("상대가 선턴입니다.");
+                                    qurridorGameController.startGame(false,firstUserId,userId,gameBoard); // 두 번째 플레이어로 게임 시작
+                                    qurridorGameController.setUserId(secondUserId);
+                                }
+                                startGame(gameBoard);
+                                serverConnect.sendMove(gameBoard);
+                                break;
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
 
                         case CHATTING_MODE:
                             String msg = serverMsg.getMessage();
@@ -343,24 +403,6 @@ public class QurridorUI extends JFrame {
                             }
                             break;
                         case FIRST_MODE:
-                            String message = serverMsg.getMessage();
-                            String[] ids = message.split(",");
-
-                            firstUserId = ids[0];
-                            secondUserId = ids[1];
-                            if(userId.equals(firstUserId)){
-                                isFirst = true;
-                                chatArea.append("선턴입니다.");
-                                qurridorGameController.startGame(true,userId,secondUserId,gameBoard); // 첫 번째 플레이어로 게임 시작
-
-                            }
-                            else if(userId.equals(secondUserId)){
-                                chatArea.append("상대가 선턴입니다.");
-                                qurridorGameController.startGame(false,firstUserId,userId,gameBoard); // 두 번째 플레이어로 게임 시작
-                                qurridorGameController.setUserId(secondUserId);
-                            }
-                            startGame(gameBoard);
-                            serverConnect.sendMove(gameBoard);
                             break;
                         case PLAY_MODE, OBSTACLE_MODE:
                             if(id.equals(userId)) {
@@ -368,6 +410,7 @@ public class QurridorUI extends JFrame {
                                 qurridorGameController.updateGameBoardFromServer(gameBoard);
                                 opponentController.setGameBoard(gameBoard);
                                 qurridorGameController.setMyTurn(false);
+                                obstacleActionListener.setMyTurn(false);
                                 obstacleActionListener.setGameBoard(gameBoard);
                             }
                             else{
@@ -375,9 +418,18 @@ public class QurridorUI extends JFrame {
                                 opponentController.updateGameBoardFromServer(gameBoard);
                                 qurridorGameController.setGameBoard(gameBoard);
                                 qurridorGameController.setMyTurn(true);
+                                obstacleActionListener.setMyTurn(true);
                                 obstacleActionListener.setGameBoard(gameBoard);
                             }
                             break;
+                        case WIN_MODE:
+                            String winner = serverMsg.getMessage();
+                            if(winner.equals(firstUserId)){
+                                System.out.println(firstUserId + "이겼당");
+                            }
+                            else if(winner.equals(secondUserId)){
+                                System.out.println(secondUserId+ " 이겼당");
+                            }
                     }
                 }
             }

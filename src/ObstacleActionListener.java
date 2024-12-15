@@ -6,15 +6,19 @@ public class ObstacleActionListener implements ActionListener {
     private GameObject[][] gameBoard;
     private ServerConnect serverConnect;
     private String userId;
+    private boolean myTurn;
     public ObstacleActionListener(GameObject[][] gameBoard, ServerConnect serverConnect, String userId) {
         this.gameBoard = gameBoard;
         this.serverConnect = serverConnect;
         this.userId=userId;
-        System.out.println("my user Id : "+userId);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        if(!myTurn){
+            System.out.println("not turn "+userId);
+            return;
+        }
         System.out.println("click");
         ObstacleButton clickedObstacleBtn = (ObstacleButton) e.getSource();
 
@@ -39,5 +43,12 @@ public class ObstacleActionListener implements ActionListener {
 
     public void setGameBoard(GameObject[][] gameBoard) {
         this.gameBoard = gameBoard;
+    }
+
+    public boolean isMyTurn() {
+        return myTurn;
+    }
+    public void setMyTurn(boolean myTurn){
+        this.myTurn=myTurn;
     }
 }
