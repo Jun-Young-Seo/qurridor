@@ -11,11 +11,16 @@ public class XMLReader {
     private Document XMLDoc;
 
     public final String E_SETTING= "Setting";
-    public final String E_SIZE= "Size"; //일단 아직 안만듬
     public final String E_HOWMANYROWS="HowManyRows"; //몇 행으로 할지
     public final String E_HOWMANYCOLS="HowManyCols"; // 몇 열로 할지
+    public final String E_IMAGE = "Image";
+    public final String E_BLOCKIMAGE_1="BlockImagePath_1";
+    public final String E_BLOCKIMAGE_2="BlockImagePath_2";
+    public final String E_OBSTACLEIMAGE="ObstacleImagePath";
     private Node settingElement=null;
-    private Node sizeElement=null;
+    private Node imageElement = null;
+    private Node blockImageElement=null;
+    private Node obstacleImageElement=null;
     private Node howManyRowElement=null;
     private Node howManyColElement=null;
     public XMLReader(String XMLFile) {
@@ -53,6 +58,15 @@ public class XMLReader {
             else if(node.getNodeName().equals(E_SETTING)){
                 settingElement = node;
             }
+            else if(node.getNodeName().equals(E_IMAGE)){
+                imageElement = node;
+            }
+//            else if(node.getNodeName().equals(E_BLOCKIMAGE)){
+//                blockImageElement=node;
+//            }
+//            else if(node.getNodeName().equals(E_OBSTACLEIMAGE)){
+//                obstacleImageElement=node;
+//            }
             //attr 방식 말고 <HowManyRows>8</HowManyRows> 이렇게 하고싶을까봐 일단 주석처리
 //            else if(node.getNodeName().equals(E_SIZE)){
 //                sizeElement=node;
@@ -101,5 +115,8 @@ public class XMLReader {
     public Node getSettingElement() {
         return settingElement;
     }
+    public Node getImageElement(){return imageElement;}
+    public Node getBlockImageElement(){return blockImageElement;}
 
+    public Node getObstacleImageElement() {return obstacleImageElement;}
 }

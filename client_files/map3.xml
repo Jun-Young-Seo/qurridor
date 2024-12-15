@@ -1,4 +1,5 @@
 <GameConfig>
-    <Setting HowManyRows="8" HowManyCols="8"/>
+    <Setting HowManyRows="7" HowManyCols="7"/>
+     <Image BlockImagePath="./client_files/a.png"/>
     <Size Width="1024" Height="768"/>
 </GameConfig>

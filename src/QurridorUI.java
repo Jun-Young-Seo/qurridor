@@ -32,9 +32,16 @@ public class QurridorUI extends JFrame {
     ServerConnect serverConnect;
     private ObstacleActionListener obstacleActionListener;
     private ErrorDisplay errorDisplay;
+    private TurnDisplay turnDisplay;
+    private String blockImagePath;
+    private String obstacleImagePath;
+    private ImageIcon playerImageIcon;
+    private ImageIcon opponentImageIcon;
+    private ImageIcon obstacleImageIcon;
     public QurridorUI() {
         qurridorMessageQueue = new MessageQueue();
         errorDisplay=new ErrorDisplay();
+        turnDisplay = new TurnDisplay();
         setTitle("Quoridor Game");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1630, 940); // 전체 프레임 크기 설정
@@ -44,6 +51,9 @@ public class QurridorUI extends JFrame {
     }
     public void showError(){
         errorDisplay.showError();
+    }
+    public void showTurn(boolean turn){
+        turnDisplay.showTurn(turn);
     }
     private void splitPanel() {
         setLayout(new BorderLayout());
@@ -82,7 +92,10 @@ public class QurridorUI extends JFrame {
         gamePanel.add(topStatusBar);
         gamePanel.add(bottomStatusBar);
         gamePanel.add(errorDisplay);
-        gamePanel.setComponentZOrder(errorDisplay,0);
+        gamePanel.add(turnDisplay);
+        System.out.println("TurnDisplay Bounds: " + turnDisplay.getBounds());
+        System.out.println("GamePanel Bounds: " + gamePanel.getBounds());
+
         hSplitPane.setLeftComponent(gamePanel);
 
         // 오른쪽 접속자 정보 및 채팅창
@@ -222,12 +235,26 @@ public class QurridorUI extends JFrame {
 
 
     }
-
+    public JPanel getGamePanel(){
+        return gamePanel;
+    }
     private void xmlParsing(String xmlFile) {
         XMLReader xmlReader = new XMLReader(xmlFile);
         Node settingNode = xmlReader.getSettingElement();
         howManyRows = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYROWS));
         howManyCols = Integer.parseInt(xmlReader.getAttr(settingNode, xmlReader.E_HOWMANYCOLS));
+        Node imageNode = xmlReader.getImageElement();
+        blockImagePath = xmlReader.getAttr(imageNode, xmlReader.E_BLOCKIMAGE_1);
+        System.out.println(blockImagePath);
+        String opponentBlockImagePath = xmlReader.getAttr(imageNode, xmlReader.E_BLOCKIMAGE_2);
+        System.out.println(opponentBlockImagePath);
+        playerImageIcon = new ImageIcon(new ImageIcon(blockImagePath).getImage()
+                .getScaledInstance(60, 60, Image.SCALE_SMOOTH));
+        opponentImageIcon = new ImageIcon(new ImageIcon(opponentBlockImagePath).getImage()
+                .getScaledInstance(60,60,Image.SCALE_SMOOTH));
+//        Node obstacleImageNode = xmlReader.getObstacleImageElement();
+//        obstacleImagePath = xmlReader.getAttr(obstacleImageNode, xmlReader.E_OBSTACLEIMAGE);
+//        obstacleImageIcon = new ImageIcon(obstacleImagePath);
         setGameArea();
         int centerX = (gamePanel.getWidth() - gameArea.getWidth()) / 2;
         int centerY = (gamePanel.getHeight() - gameArea.getHeight()) / 2;
@@ -319,7 +346,7 @@ public class QurridorUI extends JFrame {
         if(gameBoard[topRow][centerCol] instanceof Block){
             ((Block) gameBoard[topRow][centerCol]).setUserId(secondUserId);
         }
-        System.out.println(firstUserId+", "+secondUserId);
+        System.out.println("Start game : firstID: "+firstUserId+", second: "+secondUserId);
         renderGameArea(gameBoard);
     }
     public void renderGameArea(GameObject[][] gameBoard) {
@@ -334,11 +361,10 @@ public class QurridorUI extends JFrame {
                     Block block = (Block) obj;
                     JLabel blockLabel = new JLabel();
                     blockLabel.setOpaque(true);
-
                     if (block.getUserId().equals(firstUserId)) {
-                        blockLabel.setBackground(Color.GREEN); // 내 말
+                        blockLabel.setIcon(playerImageIcon);
                     } else if (block.getUserId().equals(secondUserId)) {
-                        blockLabel.setBackground(Color.RED); // 상대방 말
+                        blockLabel.setIcon(opponentImageIcon);
                     } else if (block.getUserId().isEmpty()) {
                         blockLabel.setBackground(Color.WHITE); // 빈 블록
                     }
@@ -392,6 +418,7 @@ public class QurridorUI extends JFrame {
                             String[] ids = message.split(",");
                             firstUserId = ids[0];
                             secondUserId = ids[1];
+                            System.out.println("user Id : "+userId+ " First User Id : "+firstUserId+" Second user Id : "+secondUserId);
                             File xmlFile = new File("./client_files/"+serverMsg.getFileName());
                             try {
                                 FileOutputStream fos = new FileOutputStream(xmlFile);
@@ -407,12 +434,10 @@ public class QurridorUI extends JFrame {
 
                                 if(userId.equals(firstUserId)){
                                     isFirst = true;
-                                    chatArea.append("상대가 선턴입니다.");
-                                    qurridorGameController.startGame(true,userId,secondUserId,gameBoard); // 두 번째 플레이어로 게임 시작
+                                    qurridorGameController.startGame(true,userId,secondUserId,gameBoard);
                                 }
                                 else if(userId.equals(secondUserId)){
-                                    chatArea.append("선턴입니다.");
-                                    qurridorGameController.startGame(false,firstUserId,userId,gameBoard); // 첫 번째 플레이어로 게임 시작
+                                    qurridorGameController.startGame(false,firstUserId,userId,gameBoard);
                                     qurridorGameController.setUserId(secondUserId);
                                 }
                                 startGame(gameBoard);
@@ -437,6 +462,8 @@ public class QurridorUI extends JFrame {
                         case FIRST_MODE:
                             break;
                         case PLAY_MODE, OBSTACLE_MODE:
+                            System.out.println("Server ID :" + id+" My Id : "+userId);
+
                             if(id.equals(userId)) {
                                 gameBoard = serverMsg.getGameBoard();
                                 qurridorGameController.updateGameBoardFromServer(gameBoard);
@@ -445,7 +472,8 @@ public class QurridorUI extends JFrame {
                                 obstacleActionListener.setMyTurn(false);
                                 obstacleActionListener.setGameBoard(gameBoard);
                             }
-                            else{
+                            else {
+                                chatArea.append("my Turn! \n");
                                 gameBoard= serverMsg.getGameBoard();
                                 opponentController.updateGameBoardFromServer(gameBoard);
                                 qurridorGameController.setGameBoard(gameBoard);

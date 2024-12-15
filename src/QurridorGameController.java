@@ -14,7 +14,7 @@ public class QurridorGameController extends KeyAdapter {
     // 내 현재 위치
     private int nowRow;
     private int nowCol;
-    private ErrorDisplay errorDisplay;
+
     public QurridorGameController(JPanel gamePanel, JPanel gameArea, GameObject[][] gameBoard,
                                   ServerConnect serverConnect, String userId, QurridorUI qurridorUI) {
         System.out.println("Game Controller oKAy");
@@ -191,6 +191,7 @@ public class QurridorGameController extends KeyAdapter {
 
     public void setMyTurn(boolean isMyTurn) {
         this.isMyTurn = isMyTurn;
+        qurridorUI.showTurn(isMyTurn);
     }
     public void setUserId(String userId){
         this.userId=userId;
@@ -199,4 +200,5 @@ public class QurridorGameController extends KeyAdapter {
     public void setGameBoard(GameObject[][] gameBoard) {
         this.gameBoard = gameBoard;
     }
+
 }

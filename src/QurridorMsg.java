@@ -6,7 +6,7 @@ public class QurridorMsg implements Serializable {
     private mode nowMode;
     private GameObject[][] gameBoard;
 
-    public enum mode {LOGIN_MODE, LOGOUT_MODE, CHATTING_MODE, START_MODE,XML_MODE, PLAY_MODE, OBSTACLE_MODE, WIN_MODE, LOSE_MODE, END_MODE, FIRST_MODE};
+    public enum mode {LOGIN_MODE, LOGOUT_MODE, CHATTING_MODE, IMAGE_MODE,START_MODE,XML_MODE, PLAY_MODE, OBSTACLE_MODE, WIN_MODE, LOSE_MODE, END_MODE, FIRST_MODE};
     private String message;
     private String fileName;
     private byte[] fileData;//파일 데이터를 담을 배열 --> 1k 버퍼처럼 사용
