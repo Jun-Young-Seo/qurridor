@@ -16,6 +16,9 @@ public class QurridorServer {
     private ServerSocket serverSocket;
     private Vector<PlayerHandler> playerConnects = new Vector<>(2);
     private boolean assignFirst = false;
+    private String firstId;
+    private String secondId;
+    private int connectCount = 0;
     public QurridorServer() {
         buildGUI();
     }
@@ -114,6 +117,61 @@ public class QurridorServer {
     }
     //파일 브로드캐스트 함수
     //ImageIcon과 따로 분리하지 않고, 모드로 분리해서 사용
+    public void broadcastXmlFile(File file) {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
+            byte[] buffer = new byte[1024]; // 1KB 버퍼
+            int bytesRead; // 읽은 바이트 수
+
+            while ((bytesRead = bis.read(buffer)) != -1) {
+                QurridorMsg fileMsg = new QurridorMsg();
+                fileMsg.setMessage(firstId + "," + secondId);
+                fileMsg.setNowMode(QurridorMsg.mode.XML_MODE);
+                fileMsg.setFileName(file.getName());
+
+                // 실제 읽은 데이터 크기만큼 파일 데이터 설정
+                if (bytesRead < 1024) {
+                    byte[] exactData = new byte[bytesRead];
+                    System.arraycopy(buffer, 0, exactData, 0, bytesRead);
+                    fileMsg.setFileData(exactData);
+                } else {
+                    fileMsg.setFileData(buffer);
+                }
+
+                // 모든 클라이언트에 데이터 전송
+                for (PlayerHandler client : playerConnects) {
+                    try {
+                        client.objectOutputStream.writeObject(fileMsg);
+                        client.objectOutputStream.flush();
+                    } catch (IOException e) {
+                        printDisplay("파일 데이터 전송 중 오류 발생: " + client.getUserId());
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            // 파일 전송 완료 메시지 전송
+            QurridorMsg eofMsg = new QurridorMsg();
+            eofMsg.setFileName(file.getName());
+            eofMsg.setMessage("EOF"); // EOF 메시지 설정
+            eofMsg.setNowMode(QurridorMsg.mode.XML_MODE);
+
+            for (PlayerHandler client : playerConnects) {
+                try {
+                    client.objectOutputStream.writeObject(eofMsg);
+                    client.objectOutputStream.flush();
+                } catch (IOException e) {
+                    printDisplay("EOF 전송 중 오류 발생: " + client.getUserId());
+                    e.printStackTrace();
+                }
+            }
+
+            printDisplay("XML 파일 전송 완료: " + file.getName());
+        } catch (IOException e) {
+            printDisplay("파일 읽기 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
 
     // 서버에서 다중 접속 처리(멀티스레딩 서버)를 위한 핸들러 클래스
     class PlayerHandler extends Thread {
@@ -127,7 +185,6 @@ public class QurridorServer {
         ObjectOutputStream objectOutputStream;
         private QurridorMsg qurridorMsg;
         private GameObject [][] gameBoard;
-
         public PlayerHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
             try {
@@ -158,32 +215,56 @@ public class QurridorServer {
                             printDisplay("클라이언트가 연결되었습니다. : " + clientSocket.getInetAddress());
                             printDisplay("새 참가자 : " + userId);
                             printDisplay("현재 참가자 수 : " + playerConnects.size());
-
                             // 새로운 참가자 알림
                             QurridorMsg loginMsg = new QurridorMsg();
                             loginMsg.setMessage("새 참가자 : " + userId);
                             loginMsg.setUserId(userId);
                             loginMsg.setNowMode(QurridorMsg.mode.LOGIN_MODE);
                             broadCast(loginMsg);
-
-                            // 두 명의 클라이언트가 로그인했을 때 선턴 메시지 전송
-                            if (playerConnects.size() == 2 && !assignFirst) {
-                                // 모든 플레이어의 ID가 초기화되었는지 확인
-                                String firstId = playerConnects.get(0).getUserId();
-                                String secondId = playerConnects.get(1).getUserId();
-
-                                if (firstId != null && secondId != null) {
-                                    assignFirst = true;
-
-                                    QurridorMsg assignFirstMsg = new QurridorMsg();
-                                    assignFirstMsg.setNowMode(QurridorMsg.mode.FIRST_MODE);
-                                    assignFirstMsg.setMessage(firstId + "," + secondId);
-                                    broadCast(assignFirstMsg);
+                            connectCount++;
+                            if(connectCount==2){
+                                // 두 명의 클라이언트가 맵 골랐을 때 선턴 메시지 전송
+                                if (playerConnects.size() == 2 && !assignFirst) {
+                                    // 모든 플레이어의 ID가 초기화되었는지 확인
+                                    firstId = playerConnects.get(0).getUserId();
+                                    secondId = playerConnects.get(1).getUserId();
+                                    System.out.println("<firstMode> first : "+firstId+", second : "+secondId);
+                                    if (firstId != null && secondId != null) {
+                                        assignFirst = true;
+                                        QurridorMsg assignFirstMsg = new QurridorMsg();
+                                        assignFirstMsg.setNowMode(QurridorMsg.mode.FIRST_MODE);
+                                        assignFirstMsg.setMessage(firstId + "," + secondId);
+                                        broadCast(assignFirstMsg);
+                                    }
                                 }
                             }
                             break;
-//                        case START_MODE:
-//                            gameBoard = new GameObject[9][9];
+                        case FIRST_MODE:
+
+
+                            break;
+                        case XML_MODE:
+                            String fileName = qurridorMsg.getMessage();
+                            System.out.println(fileName);
+                            broadcastXmlFile(new File(fileName));
+                            break;
+                        case WIN_MODE:
+                            String id = qurridorMsg.getUserId();
+                            QurridorMsg winMsg = new QurridorMsg();
+                            winMsg.setNowMode(QurridorMsg.mode.WIN_MODE);
+                            System.out.println("<WIN MODE> first : "+firstId+", second : "+secondId);
+                            if(id.equals(firstId)){
+                                System.out.println(firstId+" Win");
+                                winMsg.setMessage(firstId);
+                            }
+                            else if(id.equals(secondId)){
+                                System.out.println(secondId+" Win");
+                                winMsg.setMessage(secondId);
+                            }
+                            broadCast(winMsg);
+                            break;
+                        case LOSE_MODE:
+                            break;
                         //채팅 모드
                         case CHATTING_MODE:
                             QurridorMsg chattingMsg = new QurridorMsg();
