@@ -94,16 +94,48 @@ public class QurridorUI extends JFrame {
         mapInfoPanel.setBackground(Color.CYAN);
         mapInfoPanel.setSize(400, 450);
         mapInfoPanel.setLocation(0, 0);
+        mapInfoPanel.setLayout(null); // 절대 위치를 사용해 버튼 크기를 조정
+
         JLabel userInfoLabel = new JLabel("맵 목록", SwingConstants.CENTER);
+        userInfoLabel.setBounds(150, 10, 100, 30); // 위치 및 크기 설정
+        userInfoLabel.setFont(new Font("Serif", Font.BOLD, 16)); // 제목 폰트 설정
         mapInfoPanel.add(userInfoLabel);
-        JButton map1Button = new JButton("map1");
-        mapInfoPanel.add(map1Button);
+
+        // 버튼 생성 및 위치 설정
+        JButton map1Button = new JButton("맵 1");
+        map1Button.setBounds(150, 60, 100, 30); // 위치 및 크기 설정
+
+        JButton map2Button = new JButton("맵 2");
+        map2Button.setBounds(150, 110, 100, 30); // 위치 및 크기 설정
+
+        JButton map3Button = new JButton("맵 3");
+        map3Button.setBounds(150, 160, 100, 30); // 위치 및 크기 설정
+
+        // 버튼의 액션 리스너 추가
         map1Button.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 serverConnect.requestMap("d.xml");
             }
         });
+        map2Button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                serverConnect.requestMap("map2.xml");
+            }
+        });
+        map3Button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                serverConnect.requestMap("map3.xml");
+            }
+        });
+
+        // 버튼 추가
+        mapInfoPanel.add(map1Button);
+        mapInfoPanel.add(map2Button);
+        mapInfoPanel.add(map3Button);
+
         // 채팅창 패널
         chatPanel = new JPanel();
         chatPanel.setBackground(Color.PINK);
@@ -304,13 +336,10 @@ public class QurridorUI extends JFrame {
                     blockLabel.setOpaque(true);
 
                     if (block.getUserId().equals(firstUserId)) {
-                        System.out.println(firstUserId);
                         blockLabel.setBackground(Color.GREEN); // 내 말
                     } else if (block.getUserId().equals(secondUserId)) {
-                        System.out.println(secondUserId);
                         blockLabel.setBackground(Color.RED); // 상대방 말
                     } else if (block.getUserId().isEmpty()) {
-                        System.out.println("EMPTY");
                         blockLabel.setBackground(Color.WHITE); // 빈 블록
                     }
 
@@ -378,15 +407,18 @@ public class QurridorUI extends JFrame {
 
                                 if(userId.equals(firstUserId)){
                                     isFirst = true;
-                                    chatArea.append("선턴입니다.");
-                                    qurridorGameController.startGame(true,userId,secondUserId,gameBoard); // 첫 번째 플레이어로 게임 시작
+                                    chatArea.append("상대가 선턴입니다.");
+                                    qurridorGameController.startGame(true,userId,secondUserId,gameBoard); // 두 번째 플레이어로 게임 시작
                                 }
                                 else if(userId.equals(secondUserId)){
-                                    chatArea.append("상대가 선턴입니다.");
-                                    qurridorGameController.startGame(false,firstUserId,userId,gameBoard); // 두 번째 플레이어로 게임 시작
+                                    chatArea.append("선턴입니다.");
+                                    qurridorGameController.startGame(false,firstUserId,userId,gameBoard); // 첫 번째 플레이어로 게임 시작
                                     qurridorGameController.setUserId(secondUserId);
                                 }
                                 startGame(gameBoard);
+                                //이걸 호출해야 서버로 초기화된 시작상태 gameBoard를 한번 보낼 수 있고
+                                //문제는 그렇게하면 다시 Echo가 되서 돌아오는 경우에 선 턴이 바뀐거처럼 된다
+                                //새로운 모드를 추가해야 하지만 일단은 순서를 바꿔만 놓겠음. 할게 많으니까 아직
                                 serverConnect.sendMove(gameBoard);
                                 break;
                             } catch (IOException e) {
