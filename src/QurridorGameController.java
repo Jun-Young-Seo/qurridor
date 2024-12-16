@@ -167,10 +167,12 @@ public class QurridorGameController extends KeyAdapter {
 
         if(isFirst&&newRow==0){
             System.out.println("WIN!!"+userId);
+            qurridorUI.showWin();
             serverConnect.sendWin(userId);
         }
         else if(!isFirst&&newRow==gameBoard.length-1){
             System.out.println("WIN!!"+userId);
+            qurridorUI.showWin();
             serverConnect.sendWin(userId);
         }
 

@@ -1,1 +1,1 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><GameConfig><Setting HowManyCols="7" HowManyRows="7"/><Image BlockImagePath_1="./client_files/player1_a.png" BlockImagePath_2="./client_files/player2_b.png"/></GameConfig>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><GameConfig><Setting HowManyCols="3" HowManyRows="3"/><Image BlockImagePath_1="./client_files/player1_a.png" BlockImagePath_2="./client_files/player2_b.png"/></GameConfig>

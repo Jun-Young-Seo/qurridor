@@ -11,6 +11,7 @@ import java.awt.event.MouseEvent;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Objects;
 
 public class QurridorUI extends JFrame {
     private JPanel gamePanel;
@@ -41,11 +42,16 @@ public class QurridorUI extends JFrame {
     private ImageIcon obstacleImageIcon;
     private GameSettingDialog dialog;
     private ReadyToPlay readyToPlay;
+    private WinDisplay winDisplay;
+    private LoseDisplay loseDisplay;
     public QurridorUI() {
         qurridorMessageQueue = new MessageQueue();
         errorDisplay=new ErrorDisplay();
         turnDisplay = new TurnDisplay();
         readyToPlay = new ReadyToPlay();
+        winDisplay = new WinDisplay();
+        loseDisplay = new LoseDisplay();
+
         dialog = new GameSettingDialog(this);
         dialog.setVisible(false);
         setTitle("Quoridor Game");
@@ -55,12 +61,14 @@ public class QurridorUI extends JFrame {
         splitPanel();
         setVisible(true);
     }
+    public void showLose(){loseDisplay.showLose();}
     public void showError(){
         errorDisplay.showError();
     }
     public void showTurn(boolean turn){
         turnDisplay.showTurn(turn);
     }
+    public void showWin(){winDisplay.showWin();}
     private void splitPanel() {
         setLayout(new BorderLayout());
 
@@ -100,6 +108,8 @@ public class QurridorUI extends JFrame {
         gamePanel.add(errorDisplay);
         gamePanel.add(turnDisplay);
         gamePanel.add(readyToPlay);
+        gamePanel.add(winDisplay);
+        gamePanel.add(loseDisplay);
         hSplitPane.setLeftComponent(gamePanel);
 
         // 오른쪽 접속자 정보 및 채팅창
@@ -464,8 +474,12 @@ public class QurridorUI extends JFrame {
                             try {
                                 FileOutputStream fos = new FileOutputStream(xmlFile);
                                 fos.write(serverMsg.getFileData());
-                                while(!qurridorMessageQueue.isEmpty()){
+                                while(true){
                                     QurridorMsg fileMsg = qurridorMessageQueue.dequeueMessage();
+                                    if(fileMsg==null){
+                                        Thread.sleep(10);
+                                        continue;
+                                    }
                                     if(fileMsg.getMessage().equals("EOF")){
                                         break;
                                     }
@@ -488,7 +502,7 @@ public class QurridorUI extends JFrame {
                                 //새로운 모드를 추가해야 하지만 일단은 순서를 바꿔만 놓겠음. 할게 많으니까 아직
                                 serverConnect.sendMove(gameBoard);
                                 break;
-                            } catch (IOException e) {
+                            } catch (IOException | InterruptedException e) {
                                 throw new RuntimeException(e);
                             }
 
@@ -531,11 +545,9 @@ public class QurridorUI extends JFrame {
                             break;
                         case WIN_MODE:
                             String winner = serverMsg.getMessage();
-                            if(winner.equals(firstUserId)){
-                                System.out.println(firstUserId + "이겼당");
-                            }
-                            else if(winner.equals(secondUserId)){
-                                System.out.println(secondUserId+ " 이겼당");
+                            System.out.println("Winner : "+winner);
+                            if(!winner.equals(userId)){
+                                loseDisplay.showLose();
                             }
                     }
                 }
