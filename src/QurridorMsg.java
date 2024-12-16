@@ -5,10 +5,12 @@ public class QurridorMsg implements Serializable {
     private String userId;
     private mode nowMode;
     private GameObject[][] gameBoard;
-
-    public enum mode {LOGIN_MODE, LOGOUT_MODE, CHATTING_MODE, IMAGE_MODE,START_MODE,XML_MODE, PLAY_MODE, OBSTACLE_MODE, WIN_MODE, LOSE_MODE, END_MODE, FIRST_MODE};
+    private String fileCase;
+    public enum mode {LOGIN_MODE, LOGOUT_MODE, CHATTING_MODE, FILE_MODE, IMAGE_MODE,START_MODE,XML_MODE, PLAY_MODE, OBSTACLE_MODE, WIN_MODE, LOSE_MODE, END_MODE, FIRST_MODE};
     private String message;
     private String fileName;
+    private String gameRow;
+    private String gameCol;
     private byte[] fileData;//파일 데이터를 담을 배열 --> 1k 버퍼처럼 사용
     public boolean isMsg;
     public mode getNowMode() {
@@ -35,6 +37,21 @@ public class QurridorMsg implements Serializable {
         return fileData;
     }
 
+    public String getGameCol() {
+        return gameCol;
+    }
+
+    public String getGameRow() {
+        return gameRow;
+    }
+
+    public void setGameCol(String gameCol) {
+        this.gameCol = gameCol;
+    }
+    public void setGameRow(String gameRow){
+        this.gameRow=gameRow;
+    }
+
     public void setFileData(byte[] fileData) {
         this.fileData = fileData;
     }
@@ -49,6 +66,14 @@ public class QurridorMsg implements Serializable {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getFileCase() {
+        return fileCase;
+    }
+
+    public void setFileCase(String fileCase) {
+        this.fileCase = fileCase;
     }
 
     public void setGameBoard(GameObject[][] gameBoard) {

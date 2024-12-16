@@ -26,7 +26,7 @@ public class MessageQueue {
             return null;
         }
     }
-
+    public int getSize() {return messageQueue.size();}
     public boolean isEmpty() {
         return messageQueue.isEmpty();
     }

@@ -20,6 +20,7 @@ public class ReceiveThread extends Thread{
             while (true){
                 serverMsg = (QurridorMsg)in.readObject();
                 qurridorMessageQueue.enqueueMessage(serverMsg);
+                System.out.println("Enqueue : "+ serverMsg);
             }
         }
         catch (IOException | ClassNotFoundException e){

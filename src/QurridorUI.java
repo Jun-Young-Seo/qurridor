@@ -1,12 +1,13 @@
 import org.w3c.dom.Node;
 
 import javax.swing.*;
+import java.io.File;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.io.File;
+
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -38,10 +39,15 @@ public class QurridorUI extends JFrame {
     private ImageIcon playerImageIcon;
     private ImageIcon opponentImageIcon;
     private ImageIcon obstacleImageIcon;
+    private GameSettingDialog dialog;
+    private ReadyToPlay readyToPlay;
     public QurridorUI() {
         qurridorMessageQueue = new MessageQueue();
         errorDisplay=new ErrorDisplay();
         turnDisplay = new TurnDisplay();
+        readyToPlay = new ReadyToPlay();
+        dialog = new GameSettingDialog(this);
+        dialog.setVisible(false);
         setTitle("Quoridor Game");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1630, 940); // 전체 프레임 크기 설정
@@ -93,9 +99,7 @@ public class QurridorUI extends JFrame {
         gamePanel.add(bottomStatusBar);
         gamePanel.add(errorDisplay);
         gamePanel.add(turnDisplay);
-        System.out.println("TurnDisplay Bounds: " + turnDisplay.getBounds());
-        System.out.println("GamePanel Bounds: " + gamePanel.getBounds());
-
+        gamePanel.add(readyToPlay);
         hSplitPane.setLeftComponent(gamePanel);
 
         // 오른쪽 접속자 정보 및 채팅창
@@ -123,26 +127,6 @@ public class QurridorUI extends JFrame {
 
         JButton map3Button = new JButton("맵 3");
         map3Button.setBounds(150, 160, 100, 30); // 위치 및 크기 설정
-
-        // 버튼의 액션 리스너 추가
-        map1Button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                serverConnect.requestMap("d.xml");
-            }
-        });
-        map2Button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                serverConnect.requestMap("map2.xml");
-            }
-        });
-        map3Button.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                serverConnect.requestMap("map3.xml");
-            }
-        });
 
         // 버튼 추가
         mapInfoPanel.add(map1Button);
@@ -210,6 +194,37 @@ public class QurridorUI extends JFrame {
         processMessage.start();
 
         // 버튼 리스너 추가
+        mapSettingButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                    dialog.setVisible(true);
+                    System.out.println("Row: " + dialog.getRow());
+                    System.out.println("Column: " + dialog.getColumn());
+                    System.out.println("Image 1: " + dialog.getImage1File().getAbsolutePath());
+                    System.out.println("Image 2: " + dialog.getImage2File().getAbsolutePath());
+                    dialog.setVisible(false);
+                    serverConnect.sendFile(dialog.getImage1File(), QurridorMsg.mode.IMAGE_MODE, dialog.getRow(), dialog.getColumn(),"player1");
+                    serverConnect.sendFile(dialog.getImage2File(), QurridorMsg.mode.IMAGE_MODE, dialog.getRow(), dialog.getColumn(),"player2");
+            }
+        });
+        map1Button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                serverConnect.requestMap("d.xml");
+            }
+        });
+        map2Button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                serverConnect.requestMap("map2.xml");
+            }
+        });
+        map3Button.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                serverConnect.requestMap("map3.xml");
+            }
+        });
         sendButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -406,19 +421,45 @@ public class QurridorUI extends JFrame {
                     String id = serverMsg.getUserId();
                     switch (serverMsg.getNowMode()) {
                         case LOGIN_MODE:
-                            if(!id.equals(userId)){
-                                opponentId=id;
-                                chatArea.append(opponentId+" Login \n");
+                            if (!id.equals(userId)) {
+                                opponentId = id;
+                                chatArea.append(opponentId + " Login \n");
                             }
                             break;
                         case LOGOUT_MODE:
                             break;
+                        case IMAGE_MODE:
+                            String imageFileName = serverMsg.getFileName();
+                            File imageFile = new File("./client_files/" + imageFileName);
+                            try (FileOutputStream fos = new FileOutputStream(imageFile)) {
+                                byte[] firstData = serverMsg.getFileData();
+                                if (firstData != null) {
+                                    fos.write(firstData);
+                                }
+                                while (true) {
+                                    QurridorMsg fileMsg = qurridorMessageQueue.dequeueMessage();
+                                    if(fileMsg==null){
+                                        Thread.sleep(10);
+                                        continue;
+                                    }
+
+                                    if ("EOF".equals(fileMsg.getMessage())) {
+                                        System.out.println("Find EOF");
+                                        break;
+                                    }
+                                    byte[] remainData = fileMsg.getFileData();
+                                    if (remainData != null && remainData.length > 0) {
+                                        fos.write(remainData);
+                                    }
+                                }
+
+                                System.out.println("이미지 파일 완전 수신: " + imageFile.getAbsolutePath());
+
+                            } catch (IOException | InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            break;
                         case XML_MODE:
-                            String message = serverMsg.getMessage();
-                            String[] ids = message.split(",");
-                            firstUserId = ids[0];
-                            secondUserId = ids[1];
-                            System.out.println("user Id : "+userId+ " First User Id : "+firstUserId+" Second user Id : "+secondUserId);
                             File xmlFile = new File("./client_files/"+serverMsg.getFileName());
                             try {
                                 FileOutputStream fos = new FileOutputStream(xmlFile);
@@ -441,6 +482,7 @@ public class QurridorUI extends JFrame {
                                     qurridorGameController.setUserId(secondUserId);
                                 }
                                 startGame(gameBoard);
+                                readyToPlay.showReady(false);
                                 //이걸 호출해야 서버로 초기화된 시작상태 gameBoard를 한번 보낼 수 있고
                                 //문제는 그렇게하면 다시 Echo가 되서 돌아오는 경우에 선 턴이 바뀐거처럼 된다
                                 //새로운 모드를 추가해야 하지만 일단은 순서를 바꿔만 놓겠음. 할게 많으니까 아직
@@ -460,10 +502,15 @@ public class QurridorUI extends JFrame {
                             }
                             break;
                         case FIRST_MODE:
+                            String message = serverMsg.getMessage();
+                            String[] ids = message.split(",");
+                            firstUserId = ids[0];
+                            secondUserId = ids[1];
+                            System.out.println("user Id : "+userId+ " First User Id : "+firstUserId+" Second user Id : "+secondUserId);
+                            readyToPlay.setReady();
                             break;
                         case PLAY_MODE, OBSTACLE_MODE:
                             System.out.println("Server ID :" + id+" My Id : "+userId);
-
                             if(id.equals(userId)) {
                                 gameBoard = serverMsg.getGameBoard();
                                 qurridorGameController.updateGameBoardFromServer(gameBoard);
