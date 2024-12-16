@@ -309,7 +309,7 @@ public class QurridorUI extends JFrame {
         int totalWidth = (howManyCols * blockWidth) + ((howManyCols - 1) * roadWidth);
         int totalHeight = (howManyRows * blockHeight) + ((howManyRows - 1) * roadHeight);
 
-        obstacleActionListener= new ObstacleActionListener(gameBoard,serverConnect,userId);
+        //obstacleActionListener= new ObstacleActionListener(gameBoard,serverConnect,userId,);
 
         gameArea.setSize(totalWidth, totalHeight);
         gameArea.setBackground(Color.WHITE);
@@ -520,6 +520,8 @@ public class QurridorUI extends JFrame {
                             String[] ids = message.split(",");
                             firstUserId = ids[0];
                             secondUserId = ids[1];
+                            obstacleActionListener = new ObstacleActionListener(gameBoard, serverConnect, userId, firstUserId, secondUserId);
+
                             System.out.println("user Id : "+userId+ " First User Id : "+firstUserId+" Second user Id : "+secondUserId);
                             readyToPlay.setReady();
                             break;
