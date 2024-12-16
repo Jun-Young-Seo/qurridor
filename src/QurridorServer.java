@@ -1,8 +1,9 @@
 import javax.swing.*;
+import java.io.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.*;
+
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
@@ -19,6 +20,8 @@ public class QurridorServer {
     private String firstId;
     private String secondId;
     private int connectCount = 0;
+
+
     public QurridorServer() {
         buildGUI();
     }
@@ -115,23 +118,22 @@ public class QurridorServer {
             }
         }
     }
-    //파일 브로드캐스트 함수
-    //ImageIcon과 따로 분리하지 않고, 모드로 분리해서 사용
-    public void broadcastXmlFile(File file) {
+    public void broadCastFile(File file, QurridorMsg.mode mode) {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
             byte[] buffer = new byte[1024]; // 1KB 버퍼
             int bytesRead; // 읽은 바이트 수
 
             while ((bytesRead = bis.read(buffer)) != -1) {
                 QurridorMsg fileMsg = new QurridorMsg();
-                fileMsg.setMessage(firstId + "," + secondId);
-                fileMsg.setNowMode(QurridorMsg.mode.XML_MODE);
+                fileMsg.setNowMode(mode);
                 fileMsg.setFileName(file.getName());
-
+                fileMsg.setMessage("");
                 // 실제 읽은 데이터 크기만큼 파일 데이터 설정
                 if (bytesRead < 1024) {
                     byte[] exactData = new byte[bytesRead];
-                    System.arraycopy(buffer, 0, exactData, 0, bytesRead);
+                    for (int i = 0; i < bytesRead; i++) {
+                        exactData[i] = buffer[i]; // 데이터를 하나씩 복사
+                    }
                     fileMsg.setFileData(exactData);
                 } else {
                     fileMsg.setFileData(buffer);
@@ -142,6 +144,8 @@ public class QurridorServer {
                     try {
                         client.objectOutputStream.writeObject(fileMsg);
                         client.objectOutputStream.flush();
+                        System.out.println(fileMsg.getFileName());
+                        buffer = new byte[1024];
                     } catch (IOException e) {
                         printDisplay("파일 데이터 전송 중 오류 발생: " + client.getUserId());
                         e.printStackTrace();
@@ -153,25 +157,25 @@ public class QurridorServer {
             QurridorMsg eofMsg = new QurridorMsg();
             eofMsg.setFileName(file.getName());
             eofMsg.setMessage("EOF"); // EOF 메시지 설정
-            eofMsg.setNowMode(QurridorMsg.mode.XML_MODE);
+            eofMsg.setNowMode(mode);
 
             for (PlayerHandler client : playerConnects) {
                 try {
                     client.objectOutputStream.writeObject(eofMsg);
                     client.objectOutputStream.flush();
+                    System.out.println("EOF Send Fin");
                 } catch (IOException e) {
                     printDisplay("EOF 전송 중 오류 발생: " + client.getUserId());
                     e.printStackTrace();
                 }
             }
 
-            printDisplay("XML 파일 전송 완료: " + file.getName());
+            printDisplay("IMAGE 파일 전송 완료: " + file.getName());
         } catch (IOException e) {
             printDisplay("파일 읽기 중 오류 발생: " + e.getMessage());
             e.printStackTrace();
         }
     }
-
 
     // 서버에서 다중 접속 처리(멀티스레딩 서버)를 위한 핸들러 클래스
     class PlayerHandler extends Thread {
@@ -185,8 +189,14 @@ public class QurridorServer {
         ObjectOutputStream objectOutputStream;
         private QurridorMsg qurridorMsg;
         private GameObject [][] gameBoard;
+        private String fileNames[];
+        private XMLCreator xmlCreator;
         public PlayerHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
+            fileNames=new String[2];
+            fileNames[0] ="";
+            fileNames[1] = "";
+            xmlCreator= new XMLCreator();
             try {
                 out = clientSocket.getOutputStream();
                 objectOutputStream = new ObjectOutputStream(new BufferedOutputStream(out));
@@ -220,6 +230,7 @@ public class QurridorServer {
                             loginMsg.setMessage("새 참가자 : " + userId);
                             loginMsg.setUserId(userId);
                             loginMsg.setNowMode(QurridorMsg.mode.LOGIN_MODE);
+                            printDisplay("새 참가자 : "+userId);
                             broadCast(loginMsg);
                             connectCount++;
                             if(connectCount==2){
@@ -228,37 +239,89 @@ public class QurridorServer {
                                     // 모든 플레이어의 ID가 초기화되었는지 확인
                                     firstId = playerConnects.get(0).getUserId();
                                     secondId = playerConnects.get(1).getUserId();
-                                    System.out.println("<firstMode> first : "+firstId+", second : "+secondId);
                                     if (firstId != null && secondId != null) {
                                         assignFirst = true;
                                         QurridorMsg assignFirstMsg = new QurridorMsg();
                                         assignFirstMsg.setNowMode(QurridorMsg.mode.FIRST_MODE);
                                         assignFirstMsg.setMessage(firstId + "," + secondId);
+                                        printDisplay("두 명의 플레이어가 연결됐으므로 턴 메시지 발송");
                                         broadCast(assignFirstMsg);
                                     }
                                 }
                             }
                             break;
                         case FIRST_MODE:
-
-
+                            gameBoard = qurridorMsg.getGameBoard();
                             break;
+
                         case XML_MODE:
                             String fileName = qurridorMsg.getMessage();
                             System.out.println(fileName);
-                            broadcastXmlFile(new File(fileName));
+                            printDisplay("선택 Map : "+fileName);
+                            broadCastFile(new File(fileName), QurridorMsg.mode.XML_MODE);
                             break;
+
+                        case IMAGE_MODE:
+                            String imageCase = qurridorMsg.getFileCase();
+                            String imageFileName = qurridorMsg.getFileName();
+                            byte[] imageFileData = qurridorMsg.getFileData();
+                            String row = qurridorMsg.getGameRow();
+                            String col = qurridorMsg.getGameCol();
+                            File imageFile = null;
+                            if(imageCase.equals("player1")){
+                                imageFile = new File("./server_files/"+"player1_"+imageFileName);
+                            }
+                            else if(imageCase.equals("player2")){
+                                imageFile = new File("./server_files/"+"player2_"+imageFileName);
+                            }
+                            try(FileOutputStream fos = new FileOutputStream(imageFile)){
+                                fos.write(imageFileData);
+                                while(true){
+                                    QurridorMsg imageFileMsg = (QurridorMsg)objectInputStream.readObject();
+                                    if(imageFileMsg.getMessage().equals("EOF")){
+                                        if(fileNames[0].isEmpty()){
+                                            fileNames[0] = imageFileName;
+                                        }
+                                        else{
+                                            fileNames[1] = imageFileName;
+                                        }
+                                        break;
+                                    }
+                                    if(imageFileMsg.getFileData()!=null){
+                                        fos.write(imageFileMsg.getFileData());
+                                    }
+                                }
+                            printDisplay("New Game Row : "+row +", Col : "+col);
+                            printDisplay("New Game 이미지 파일 저장 완료 : "+imageFile.getName());
+
+                                if (!fileNames[0].isEmpty() && !fileNames[1].isEmpty()) {
+                                    File xmlFile = xmlCreator.createGameXML(Integer.parseInt(row), Integer.parseInt(col), fileNames[0], fileNames[1]);
+
+                                    File player1Image = new File("./server_files/player1_" + fileNames[0]);
+                                    File player2Image = new File("./server_files/player2_" + fileNames[1]);
+
+                                    broadCastFile(player1Image, QurridorMsg.mode.IMAGE_MODE);
+                                    broadCastFile(player2Image, QurridorMsg.mode.IMAGE_MODE);
+                                    broadCastFile(xmlFile, QurridorMsg.mode.XML_MODE);
+                                }
+
+                            break;
+                            }
+                            catch (IOException e){
+                                e.printStackTrace();
+                            }
                         case WIN_MODE:
                             String id = qurridorMsg.getUserId();
                             QurridorMsg winMsg = new QurridorMsg();
                             winMsg.setNowMode(QurridorMsg.mode.WIN_MODE);
-                            System.out.println("<WIN MODE> first : "+firstId+", second : "+secondId);
                             if(id.equals(firstId)){
                                 System.out.println(firstId+" Win");
+                                printDisplay(firstId+" Win");
                                 winMsg.setMessage(firstId);
                             }
                             else if(id.equals(secondId)){
                                 System.out.println(secondId+" Win");
+                                printDisplay(secondId+" Win");
                                 winMsg.setMessage(secondId);
                             }
                             broadCast(winMsg);
@@ -276,6 +339,7 @@ public class QurridorServer {
                             break;
                         case PLAY_MODE:
                             gameBoard = qurridorMsg.getGameBoard();
+                            printDisplay(userId+"의 턴. 말 움직임");
                             QurridorMsg gameMsg = new QurridorMsg();
                             gameMsg.setNowMode(QurridorMsg.mode.PLAY_MODE);
                             gameMsg.setUserId(userId);
@@ -284,6 +348,7 @@ public class QurridorServer {
                             break;
                         case OBSTACLE_MODE:
                             gameBoard = qurridorMsg.getGameBoard();
+                            printDisplay(userId+"의 턴. 장애물 설치");
                             qurridorMsg.gameBoardObstacleToString(gameBoard);
                             QurridorMsg obstacleMsg = new QurridorMsg();
                             obstacleMsg.setNowMode(QurridorMsg.mode.OBSTACLE_MODE);
